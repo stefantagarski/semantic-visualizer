@@ -13,7 +13,7 @@ import java.util.Set;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class OntologyGraph {
+public class OntologyGraphDTO {
 
    private Set<String> nodes = new HashSet<>();
    private List<Triple> edges = new ArrayList<>();
