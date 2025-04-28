@@ -22,6 +22,7 @@ public class OntologyServiceImplementation implements OntologyService {
                     new ByteArrayInputStream(ontologyContent.getBytes(StandardCharsets.UTF_8)),
                     null,
                     "TURTLE" // assuming Turtle syntax
+
             );
         } catch (RiotException e) {
             throw new IllegalArgumentException("Failed to parse ontology: Invalid OWL/Turtle format.", e);
