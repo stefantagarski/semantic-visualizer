@@ -17,16 +17,20 @@ public class OntologyController {
         this.ontologyService = ontologyService;
     }
 
-    @PostMapping("/parse")
-    public ResponseEntity<?> parseOntology(@RequestBody String ontologyContent) {
+    @PostMapping("/parse") //default format param is turtle
+    @CrossOrigin(origins = "http://localhost:5173") // allow CORS for localhost:5173 frontend
+    public ResponseEntity<?> parseOntology(@RequestBody String ontologyContent,
+                                           @RequestParam(defaultValue = "turtle") String format) {
+
         try {
-            OntologyGraphDTO graph = ontologyService.parseOntology(ontologyContent);
+            OntologyGraphDTO graph = ontologyService.parseOntology(ontologyContent, format);
             return ResponseEntity.ok(graph);
-        }catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }catch (Exception e) {
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("An unexpected error occured");
+                    .body("An unexpected error occurred.");
         }
     }
+
 }
