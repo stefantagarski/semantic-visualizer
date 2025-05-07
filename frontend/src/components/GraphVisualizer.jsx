@@ -61,7 +61,8 @@ const GraphVisualizer = ({ graphData }) => {
             .text(d => d.id.split("#").pop())
             .attr("x", 12)
             .attr("y", ".31em")
-            .attr("font-size", 12);
+            .attr("font-size", 12)
+            .attr("fill", "white");
 
         simulation.on("tick", () => {
             link
