@@ -1,0 +1,54 @@
+.interaction-guide {
+    position: absolute;
+    bottom: 24px;
+    left: 24px;
+    padding: 16px 20px;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border-radius: 10px;
+    box-shadow: 0 4px 25px rgba(0,0,0,0.08);
+    font-size: 14px;
+    border: 1px solid rgba(220, 220, 220, 0.8);
+    max-width: 280px;
+    z-index: 10;
+}
+
+.guide-header {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 12px;
+    color: #4a6fa5;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.guide-icon {
+    font-size: 18px;
+}
+
+.guide-list {
+    margin: 0;
+    padding-left: 8px;
+    list-style-type: none;
+}
+
+.guide-item {
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.item-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+.item-text {
+    display: inline-block;
+}

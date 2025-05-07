@@ -1,0 +1,72 @@
+.info-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    max-width: 320px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(220, 220, 220, 0.8);
+    color: #333;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    z-index: 100;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.panel-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    color: #888;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.close-button:hover {
+    background-color: #f0f0f0;
+}
+
+.data-section {
+    padding: 12px;
+    background-color: #f7f9fc;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    border-left: 4px solid #4a6fa5;
+}
+
+.data-section:last-child {
+    margin-bottom: 0;
+}
+
+.data-label {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.data-value {
+    font-weight: 500;
+    word-break: break-all;
+    font-size: 14px;
+}

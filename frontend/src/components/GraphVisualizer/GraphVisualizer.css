@@ -1,0 +1,58 @@
+.graph-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+svg {
+    display: block;
+}
+
+.nodes circle {
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.node-labels text {
+    user-select: none;
+    pointer-events: none;
+    transition: all 0.2s ease-in-out;
+}
+
+.link-labels text {
+    pointer-events: none;
+    user-select: none;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 2px;
+    transition: all 0.2s ease-in-out;
+}
+
+.grid line {
+    pointer-events: none;
+}
+
+/* Tooltip styles for hover effects */
+.node-tooltip {
+    position: absolute;
+    padding: 8px 12px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    pointer-events: none;
+    z-index: 10;
+    font-size: 12px;
+    transition: opacity 0.2s;
+}
+
+/* Add some animation for a more modern feel */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.info-panel {
+    animation: fadeIn 0.3s ease-out forwards;
+}
