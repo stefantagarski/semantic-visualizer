@@ -121,6 +121,108 @@ const GraphVisualizer = ({ graphData }) => {
                     d.fy = null;
                 }));
 
+        const highlightNode = (nodeId) => {
+            // Reset all nodes and links to default appearance
+            node.attr("fill", "#6b93c3")
+                .attr("r", 8)
+                .attr("stroke", null)
+                .attr("stroke-width", 0);
+
+            link.attr("stroke", "#c0d0e5")
+                .attr("stroke-width", 2)
+                .attr("stroke-opacity", 0.6);
+
+            nodeLabel.attr("font-weight", "normal")
+                .attr("font-size", 12);
+
+            linkLabel.attr("opacity", 0.6);
+
+            // If no node is selected, return
+            if (!nodeId) return;
+
+            // Highlight the selected node
+            node.filter(d => d.id === nodeId)
+                .attr("fill", "#4a6fa5")
+                .attr("r", 12)
+                .attr("stroke", "#2c4870")
+                .attr("stroke-width", 2);
+
+            nodeLabel.filter(d => d.id === nodeId)
+                .attr("font-weight", "bold")
+                .attr("font-size", 14)
+                .attr("fill", "#2c4870");
+
+            // Find connected links and nodes
+            const connectedLinks = links.filter(l =>
+                (l.source.id === nodeId || l.source === nodeId) ||
+                (l.target.id === nodeId || l.target === nodeId)
+            );
+
+            const connectedNodeIds = new Set();
+            connectedLinks.forEach(l => {
+                const sourceId = l.source.id || l.source;
+                const targetId = l.target.id || l.target;
+
+                if (sourceId === nodeId) connectedNodeIds.add(targetId);
+                if (targetId === nodeId) connectedNodeIds.add(sourceId);
+            });
+
+            // Highlight connected links
+            link.filter(l =>
+                (l.source.id === nodeId || l.source === nodeId) ||
+                (l.target.id === nodeId || l.target === nodeId)
+            )
+                .attr("stroke", "#4a6fa5")
+                .attr("stroke-width", 3)
+                .attr("stroke-opacity", 1);
+
+            // Highlight connected nodes
+            node.filter(d => connectedNodeIds.has(d.id))
+                .attr("fill", "#78a2d8")
+                .attr("r", 10)
+                .attr("stroke", "#4a6fa5")
+                .attr("stroke-width", 1.5);
+
+            nodeLabel.filter(d => connectedNodeIds.has(d.id))
+                .attr("font-weight", "bold");
+
+            // Highlight relevant link labels
+            linkLabel.filter(d =>
+                (d.source.id === nodeId || d.source === nodeId) ||
+                (d.target.id === nodeId || d.target === nodeId)
+            )
+                .attr("opacity", 1)
+                .attr("font-weight", "bold");
+
+            // Dim non-connected elements
+            link.filter(l =>
+                !(l.source.id === nodeId || l.source === nodeId) &&
+                !(l.target.id === nodeId || l.target === nodeId)
+            )
+                .attr("stroke-opacity", 0.2);
+
+            node.filter(d =>
+                d.id !== nodeId && !connectedNodeIds.has(d.id)
+            )
+                .attr("fill-opacity", 0.3);
+
+            nodeLabel.filter(d =>
+                d.id !== nodeId && !connectedNodeIds.has(d.id)
+            )
+                .attr("opacity", 0.3);
+
+            linkLabel.filter(d =>
+                !(d.source.id === nodeId || d.source === nodeId) &&
+                !(d.target.id === nodeId || d.target === nodeId)
+            )
+                .attr("opacity", 0.2);
+        };
+
+        node.on("click", (event, d) => {
+            setSelectedNode(d.id);
+            highlightNode(d.id);
+        });
+
         // Create node label elements
         const nodeLabel = container.append("g")
             .attr("class", "node-labels")
