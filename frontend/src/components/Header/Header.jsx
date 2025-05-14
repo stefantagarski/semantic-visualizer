@@ -1,7 +1,7 @@
 import React from 'react';
 import './Header.css';
 
-const Header = ({ formatType, setFormatType, onReload }) => {
+const Header = ({ formatType, setFormatType, onBack }) => {
     return (
         <header className="app-header">
             <div className="header-title-container">
@@ -26,10 +26,10 @@ const Header = ({ formatType, setFormatType, onReload }) => {
                     <option value="trig">TriG</option>
                 </select>
                 <button
-                    onClick={onReload}
+                    onClick={onBack}
                     className="reload-button"
                 >
-                    <span className="reload-icon">↻</span> Reload
+                    <span className="reload-icon">↻</span> Back
                 </button>
             </div>
         </header>
