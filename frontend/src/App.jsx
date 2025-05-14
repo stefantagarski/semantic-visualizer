@@ -56,7 +56,9 @@ function App() {
 
     return (
         <div className="app-container">
-            <Header />
+            <Header formatType={formatType}
+                    setFormatType={setFormatType}
+                    onBack={handleBackClick}  />
 
             <main className="main-content">
                 {!graphData && (
