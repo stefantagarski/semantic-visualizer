@@ -19,21 +19,15 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
         svg.selectAll("*").remove(); // clear previous render
 
         // Set background color for the SVG
-        svg.append("rect")
+        const background = svg.append("rect")
             .attr("width", "100%")
             .attr("height", "100%")
-            .attr("fill", "#f9fafc");
-
-        // Use the nodes and edges directly from the backend
-        const nodes = graphData.nodes.map(node => ({ id: node.id, label: node.label }));
-        const links = graphData.edges.map(edge => ({
-            source: edge.subject,
-            target: edge.object,
-            label: edge.label || edge.predicate
-        }));
+            .attr("fill", "#f9fafc")
+            .attr("class", "background-rect");
 
         // Create a container group for the entire graph
-        const container = svg.append("g");
+        const container = svg.append("g")
+            .attr("class", "graph-container");
 
         // Add zoom functionality with smooth transition
         const zoom = d3.zoom()
@@ -44,32 +38,29 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
 
         svg.call(zoom);
 
-        // Optional: Add a subtle grid pattern for background reference
+        // Create grid with reduced code
         const gridSize = 20;
-        const grid = container.append("g")
-            .attr("class", "grid");
+        const grid = container.append("g").attr("class", "grid");
 
-        // Create horizontal grid lines
+        // Create grid lines more efficiently
         for (let y = 0; y < height; y += gridSize) {
             grid.append("line")
-                .attr("x1", -width)
-                .attr("y1", y)
-                .attr("x2", width * 2)
-                .attr("y2", y)
-                .attr("stroke", "#e5e9f0")
-                .attr("stroke-width", 1);
+                .attr("x1", -width).attr("y1", y).attr("x2", width * 2).attr("y2", y)
+                .attr("stroke", "#e5e9f0").attr("stroke-width", 1);
         }
-
-        // Create vertical grid lines
         for (let x = 0; x < width; x += gridSize) {
             grid.append("line")
-                .attr("x1", x)
-                .attr("y1", -height)
-                .attr("x2", x)
-                .attr("y2", height * 2)
-                .attr("stroke", "#e5e9f0")
-                .attr("stroke-width", 1);
+                .attr("x1", x).attr("y1", -height).attr("x2", x).attr("y2", height * 2)
+                .attr("stroke", "#e5e9f0").attr("stroke-width", 1);
         }
+
+        // Use the nodes and edges directly from the backend
+        const nodes = graphData.nodes.map(node => ({ id: node.id, label: node.label }));
+        const links = graphData.edges.map(edge => ({
+            source: edge.subject,
+            target: edge.object,
+            label: edge.label || edge.predicate
+        }));
 
         // Create link elements
         const link = container.append("g")
@@ -98,7 +89,7 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             .attr("dy", -5)
             .attr("fill", "#666");
 
-        // Create node elements with a more modern style
+        // Create node elements
         const node = container.append("g")
             .attr("class", "nodes")
             .selectAll("circle")
@@ -110,6 +101,7 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             .attr("stroke-width", 2)
             .attr("filter", "drop-shadow(0px 2px 3px rgba(0,0,0,0.1))")
             .attr("data-id", d => d.id)
+            .attr("class", "node-circle")
             .call(d3.drag()
                 .on("start", (event, d) => {
                     if (!event.active) simulation.alphaTarget(0.3).restart();
@@ -133,9 +125,7 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             .data(nodes)
             .join("text")
             .attr("class", "node-label")
-            .text(d => {
-                return d.label.length > 20 ? d.label.substring(0, 15) + "..." : d.label;
-            })
+            .text(d => d.label.length > 20 ? d.label.substring(0, 15) + "..." : d.label)
             .attr("x", 12)
             .attr("y", ".31em")
             .attr("font-size", 12);
@@ -146,22 +136,9 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             .force("charge", d3.forceManyBody().strength(-300))
             .force("center", d3.forceCenter(width / 2, height / 2));
 
-        // Add click handler to nodes
-        node.on("click", (event, d) => {
-            event.stopPropagation();
-            handleNodeClick(d.id);
-        });
-
-        // Add click handler to svg background to clear selection
-        svg.on("click", () => {
-            handleNodeClick(null);
-        });
-
         // Function to handle node click
         const handleNodeClick = (nodeId) => {
-            setSelectedNode(nodeId);
-
-            // Reset all nodes and links to default appearance
+            // Reset all nodes and links to default appearance first
             node.attr("fill", "#2e8783")
                 .attr("r", 8)
                 .attr("stroke", null)
@@ -178,9 +155,13 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
 
             // If no node is selected, we're done (reset state)
             if (!nodeId) {
+                setSelectedNode(null);
                 setNodeDetails(null);
                 return;
             }
+
+            // Set the selected node first
+            setSelectedNode(nodeId);
 
             // Fetch node details from backend if original data available
             if (originalOntologyData) {
@@ -218,22 +199,17 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             connectedLinks.forEach(l => {
                 const sourceId = l.source.id || l.source;
                 const targetId = l.target.id || l.target;
-
                 if (sourceId === nodeId) connectedNodeIds.add(targetId);
                 if (targetId === nodeId) connectedNodeIds.add(sourceId);
             });
 
-            // Highlight connected links
-            link.filter(l =>
-                (l.source.id === nodeId || l.source === nodeId) ||
-                (l.target.id === nodeId || l.target === nodeId)
-            )
+            // Highlight connected links and nodes
+            link.filter(l => (l.source.id === nodeId || l.source === nodeId) ||
+                (l.target.id === nodeId || l.target === nodeId))
                 .attr("stroke", "#4a6fa5")
                 .attr("stroke-width", 3)
-                .attr("stroke-opacity", 1)
-                .attr("stroke-dasharray", "1, 0");
+                .attr("stroke-opacity", 1);
 
-            // Highlight connected nodes
             node.filter(d => connectedNodeIds.has(d.id))
                 .attr("fill", "#78a2d8")
                 .attr("r", 10)
@@ -243,37 +219,72 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             nodeLabel.filter(d => connectedNodeIds.has(d.id))
                 .attr("font-weight", "bold");
 
-            // Highlight relevant link labels
-            linkLabel.filter(d =>
-                (d.source.id === nodeId || d.source === nodeId) ||
-                (d.target.id === nodeId || d.target === nodeId)
-            )
+            linkLabel.filter(d => (d.source.id === nodeId || d.source === nodeId) ||
+                (d.target.id === nodeId || d.target === nodeId))
                 .attr("opacity", 1)
                 .attr("font-weight", "bold");
 
             // Dim non-connected elements
-            link.filter(l =>
-                !(l.source.id === nodeId || l.source === nodeId) &&
-                !(l.target.id === nodeId || l.target === nodeId)
-            )
+            link.filter(l => !(l.source.id === nodeId || l.source === nodeId) &&
+                !(l.target.id === nodeId || l.target === nodeId))
                 .attr("stroke-opacity", 0.2);
 
-            node.filter(d =>
-                d.id !== nodeId && !connectedNodeIds.has(d.id)
-            )
+            node.filter(d => d.id !== nodeId && !connectedNodeIds.has(d.id))
                 .attr("fill-opacity", 0.3);
 
-            nodeLabel.filter(d =>
-                d.id !== nodeId && !connectedNodeIds.has(d.id)
-            )
+            nodeLabel.filter(d => d.id !== nodeId && !connectedNodeIds.has(d.id))
                 .attr("opacity", 0.3);
 
-            linkLabel.filter(d =>
-                !(d.source.id === nodeId || d.source === nodeId) &&
-                !(d.target.id === nodeId || d.target === nodeId)
-            )
+            linkLabel.filter(d => !(d.source.id === nodeId || d.source === nodeId) &&
+                !(d.target.id === nodeId || d.target === nodeId))
                 .attr("opacity", 0.2);
         };
+
+        // Function to reset the graph
+        const resetGraph = () => {
+            // Clear node selection
+            handleNodeClick(null);
+
+            // Reset graph visual elements
+            node.attr("fill", "#6b93c3")
+                .attr("r", 8)
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 2)
+                .attr("fill-opacity", 1);
+
+            link.attr("stroke", "#c0d0e5")
+                .attr("stroke-width", 2)
+                .attr("stroke-opacity", 1);
+
+            nodeLabel.attr("opacity", 1)
+                .attr("font-size", 12)
+                .attr("fill", "#000");
+
+            linkLabel.attr("opacity", 0.6);
+
+            // Reset zoom with transition
+            svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
+        };
+
+        // Add click handlers
+        node.on("click", (event, d) => {
+            event.stopPropagation();
+            selectedNode === d.id ? handleNodeClick(null) : handleNodeClick(d.id);
+        });
+
+        // Background click resets the graph
+        svg.on("click", event => {
+            if (event.target.tagName === 'svg' ||
+                event.target.classList.contains('background-rect')) {
+                event.stopPropagation();
+                resetGraph();
+            }
+        });
+
+        // Apply initial highlighting if there's already a selected node
+        if (selectedNode) {
+            handleNodeClick(selectedNode);
+        }
 
         // Update positions on simulation tick
         simulation.on("tick", () => {
@@ -296,7 +307,7 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
                 .attr("y", d => d.y + 4);
         });
 
-    }, [graphData, selectedNode, originalOntologyData, formatType]);
+    }, [graphData, originalOntologyData, formatType]);
 
     return (
         <div className="graph-container" style={{ width: '100%', height: '100%', position: 'relative' }}>
