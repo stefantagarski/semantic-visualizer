@@ -1,10 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
+import OntologyService from "../../services/OntologyService";
 
-const GraphVisualizer = ({ graphData }) => {
+const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
     const svgRef = useRef();
     const [selectedNode, setSelectedNode] = useState(null);
+    const [nodeDetails, setNodeDetails] = useState(null);
+    const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
+    // Effect for rendering the graph visualization
     useEffect(() => {
         if (!graphData) return;
 
@@ -20,11 +24,12 @@ const GraphVisualizer = ({ graphData }) => {
             .attr("height", "100%")
             .attr("fill", "#f9fafc");
 
-        const nodes = graphData.nodes.map(id => ({ id }));
+        // Use the nodes and edges directly from the backend
+        const nodes = graphData.nodes.map(node => ({ id: node.id, label: node.label }));
         const links = graphData.edges.map(edge => ({
             source: edge.subject,
             target: edge.object,
-            label: edge.predicate
+            label: edge.label || edge.predicate
         }));
 
         // Create a container group for the entire graph
@@ -85,7 +90,7 @@ const GraphVisualizer = ({ graphData }) => {
             .join("text")
             .attr("class", "link-label")
             .text(d => {
-                const label = d.label.split("#").pop();
+                const label = d.label;
                 return label.length > 20 ? label.substring(0, 20) + "..." : label;
             })
             .attr("font-size", 10)
@@ -121,16 +126,6 @@ const GraphVisualizer = ({ graphData }) => {
                     d.fy = null;
                 }));
 
-//         // Disable double-click behavior
-//         node.on("dblclick", null);
-//
-// // Single-click to select node
-//         node.on("click", (event, d) => {
-//             event.stopPropagation();
-//             handleNodeClick(d.id);
-//         });
-
-
         // Create node label elements
         const nodeLabel = container.append("g")
             .attr("class", "node-labels")
@@ -139,8 +134,7 @@ const GraphVisualizer = ({ graphData }) => {
             .join("text")
             .attr("class", "node-label")
             .text(d => {
-                const label = d.id.split("#").pop();
-                return label.length > 20 ? label.substring(0, 15) + "..." : label;
+                return d.label.length > 20 ? d.label.substring(0, 15) + "..." : d.label;
             })
             .attr("x", 12)
             .attr("y", ".31em")
@@ -183,7 +177,24 @@ const GraphVisualizer = ({ graphData }) => {
             linkLabel.attr("opacity", 0.6);
 
             // If no node is selected, we're done (reset state)
-            if (!nodeId) return;
+            if (!nodeId) {
+                setNodeDetails(null);
+                return;
+            }
+
+            // Fetch node details from backend if original data available
+            if (originalOntologyData) {
+                setIsLoadingDetails(true);
+                OntologyService.getNodeDetails(nodeId, originalOntologyData, formatType)
+                    .then(details => {
+                        setNodeDetails(details);
+                        setIsLoadingDetails(false);
+                    })
+                    .catch(error => {
+                        console.error("Error fetching node details:", error);
+                        setIsLoadingDetails(false);
+                    });
+            }
 
             // Highlight the selected node
             node.filter(d => d.id === nodeId)
@@ -212,7 +223,7 @@ const GraphVisualizer = ({ graphData }) => {
                 if (targetId === nodeId) connectedNodeIds.add(sourceId);
             });
 
-            // Highlight connected links with gradient effect
+            // Highlight connected links
             link.filter(l =>
                 (l.source.id === nodeId || l.source === nodeId) ||
                 (l.target.id === nodeId || l.target === nodeId)
@@ -285,7 +296,7 @@ const GraphVisualizer = ({ graphData }) => {
                 .attr("y", d => d.y + 4);
         });
 
-    }, [graphData, selectedNode]);
+    }, [graphData, selectedNode, originalOntologyData, formatType]);
 
     return (
         <div className="graph-container" style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -308,7 +319,10 @@ const GraphVisualizer = ({ graphData }) => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                         <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>Node Details</h3>
                         <button
-                            onClick={() => setSelectedNode(null)}
+                            onClick={() => {
+                                setSelectedNode(null);
+                                setNodeDetails(null);
+                            }}
                             style={{
                                 background: 'none',
                                 border: 'none',
@@ -330,25 +344,79 @@ const GraphVisualizer = ({ graphData }) => {
                             ×
                         </button>
                     </div>
-                    <div style={{
-                        padding: '12px',
-                        backgroundColor: '#f7f9fc',
-                        borderRadius: '6px',
-                        marginBottom: '16px',
-                        borderLeft: '4px solid #4a6fa5'
-                    }}>
-                        <div style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>IDENTIFIER</div>
-                        <div style={{ fontWeight: '500', wordBreak: 'break-all' }}>{selectedNode.split('#').pop()}</div>
-                    </div>
-                    <div style={{
-                        padding: '12px',
-                        backgroundColor: '#f7f9fc',
-                        borderRadius: '6px',
-                        borderLeft: '4px solid #4a6fa5'
-                    }}>
-                        <div style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>FULL URI</div>
-                        <div style={{ fontWeight: '500', fontSize: '14px', wordBreak: 'break-all' }}>{selectedNode}</div>
-                    </div>
+
+                    {isLoadingDetails ? (
+                        <div className="loading">Loading node details...</div>
+                    ) : (
+                        <>
+                            <div style={{
+                                padding: '12px',
+                                backgroundColor: '#f7f9fc',
+                                borderRadius: '6px',
+                                marginBottom: '16px',
+                                borderLeft: '4px solid #4a6fa5'
+                            }}>
+                                <div style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>IDENTIFIER</div>
+                                <div style={{ fontWeight: '500', wordBreak: 'break-all' }}>
+                                    {nodeDetails?.label || selectedNode.split('#').pop()}
+                                </div>
+                            </div>
+
+                            <div style={{
+                                padding: '12px',
+                                backgroundColor: '#f7f9fc',
+                                borderRadius: '6px',
+                                borderLeft: '4px solid #4a6fa5'
+                            }}>
+                                <div style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>FULL URI</div>
+                                <div style={{ fontWeight: '500', fontSize: '14px', wordBreak: 'break-all' }}>
+                                    {selectedNode}
+                                </div>
+                            </div>
+
+                            {nodeDetails && nodeDetails.incomingConnections.length > 0 && (
+                                <div style={{
+                                    marginTop: '16px',
+                                    padding: '12px',
+                                    backgroundColor: '#f7f9fc',
+                                    borderRadius: '6px',
+                                    borderLeft: '4px solid #6b8e23'
+                                }}>
+                                    <div style={{ fontSize: '13px', color: '#666', marginBottom: '8px' }}>INCOMING CONNECTIONS</div>
+                                    <ul style={{ margin: '0', padding: '0 0 0 16px' }}>
+                                        {nodeDetails.incomingConnections.map((conn, idx) => (
+                                            <li key={`in-${idx}`} style={{ marginBottom: '6px', fontSize: '13px' }}>
+                                                <span style={{ fontWeight: '500' }}>{conn.nodeLabel}</span>
+                                                <span style={{ color: '#666' }}> via </span>
+                                                <span style={{ fontStyle: 'italic', color: '#4a6fa5' }}>{conn.relationshipType}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {nodeDetails && nodeDetails.outgoingConnections.length > 0 && (
+                                <div style={{
+                                    marginTop: '16px',
+                                    padding: '12px',
+                                    backgroundColor: '#f7f9fc',
+                                    borderRadius: '6px',
+                                    borderLeft: '4px solid #cd5c5c'
+                                }}>
+                                    <div style={{ fontSize: '13px', color: '#666', marginBottom: '8px' }}>OUTGOING CONNECTIONS</div>
+                                    <ul style={{ margin: '0', padding: '0 0 0 16px' }}>
+                                        {nodeDetails.outgoingConnections.map((conn, idx) => (
+                                            <li key={`out-${idx}`} style={{ marginBottom: '6px', fontSize: '13px' }}>
+                                                <span style={{ fontWeight: '500' }}>{conn.nodeLabel}</span>
+                                                <span style={{ color: '#666' }}> via </span>
+                                                <span style={{ fontStyle: 'italic', color: '#4a6fa5' }}>{conn.relationshipType}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
             )}
         </div>

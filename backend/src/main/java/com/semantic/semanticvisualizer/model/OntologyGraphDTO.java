@@ -3,34 +3,72 @@ package com.semantic.semanticvisualizer.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-//import org.apache.jena.graph.Triple;
 
-
+/**
+ * Data Transfer Object for representing an ontology graph
+ * Enhanced to include direct nodes and edges lists suitable for D3.js visualization
+ */
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class OntologyGraphDTO {
 
-   private Set<String> nodes = new HashSet<>();
-   private List<Triple> edges = new ArrayList<>();
+    private List<Triple> triples = new ArrayList<>();
+    private List<NodeDTO> nodes = new ArrayList<>();
+    private List<EdgeDTO> edges = new ArrayList<>();
 
-   // method for adding new triples to the graph , has single source of truth
-   public void addTriple(Triple triple){
-        if(triple != null) {
-            nodes.add(triple.getSubject());
-            nodes.add(triple.getObject());
-            edges.add(triple);
+    public void addTriple(Triple triple) {
+        triples.add(triple);
+
+        // Add nodes if they don't exist
+        String subjectId = triple.getSubject();
+        String objectId = triple.getObject();
+
+        addNodeIfNotExists(subjectId);
+        addNodeIfNotExists(objectId);
+
+        // Add edge
+        EdgeDTO edge = new EdgeDTO(
+                subjectId,
+                objectId,
+                triple.getPredicate()
+        );
+        edges.add(edge);
+    }
+
+    private void addNodeIfNotExists(String nodeId) {
+        // Check if node already exists
+        boolean exists = nodes.stream()
+                .anyMatch(node -> node.getId().equals(nodeId));
+
+        if (!exists) {
+            // Create a new node
+            NodeDTO node = new NodeDTO(nodeId);
+            nodes.add(node);
         }
-   }
+    }
 
-   // resets the state of the triple
-   public void clear(){
-       nodes.clear();
-       edges.clear();
-   }
 
+
+    // Helper method to calculate statistics
+    public OntologyStatsDTO calculateStatistics() {
+        OntologyStatsDTO stats = new OntologyStatsDTO();
+        stats.setNodeCount(nodes.size());
+        stats.setEdgeCount(edges.size());
+        stats.setTripleCount(triples.size());
+
+        // Calculate predicates count
+        Set<String> uniquePredicates = new HashSet<>();
+        for (EdgeDTO edge : edges) {
+            uniquePredicates.add(edge.getLabel());
+        }
+        stats.setPredicateCount(uniquePredicates.size());
+
+        return stats;
+    }
 }

@@ -4,8 +4,8 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import InteractionGuide from './components/InteractionGuide';
 import './App.css';
-import OntologyService from './services/OntologyService';
-import FileUploadForm from './components/FileUploadForm'; // Import our new component
+import OntologyService from "./services/OntologyService";
+import FileUploadForm from './components/FileUploadForm';
 
 function App() {
     const [graphData, setGraphData] = useState(null);
@@ -15,12 +15,16 @@ function App() {
     const [showForm, setShowForm] = useState(false);
     const [turtleInput, setTurtleInput] = useState('');
     const [showFileUpload, setShowFileUpload] = useState(false);
+    const [originalOntology, setOriginalOntology] = useState(null);
+    const [stats, setStats] = useState(null);
 
     const handleParseDataClick = () => {
         setShowForm(true);
         setShowFileUpload(false);
         setGraphData(null);
         setError(null);
+        setOriginalOntology(null);
+        setStats(null);
     };
 
     const handleUploadFileClick = () => {
@@ -28,6 +32,8 @@ function App() {
         setShowForm(false);
         setGraphData(null);
         setError(null);
+        setOriginalOntology(null);
+        setStats(null);
     };
 
     const handleBackClick = () => {
@@ -35,6 +41,8 @@ function App() {
         setShowFileUpload(false);
         setGraphData(null);
         setError(null);
+        setOriginalOntology(null);
+        setStats(null);
     };
 
     const handleSubmit = async (e) => {
@@ -43,8 +51,17 @@ function App() {
         setError(null);
 
         try {
+            // Store the original ontology data for later use
+            setOriginalOntology(turtleInput);
+
+            // Parse the ontology data through the backend
             const data = await OntologyService.parseOntologyData(turtleInput, formatType);
             setGraphData(data);
+
+            // Get ontology statistics
+            const statsData = await OntologyService.getOntologyStatistics(turtleInput, formatType);
+            setStats(statsData);
+
             setShowForm(false);
         } catch (err) {
             setError(`Failed to load graph: ${err.message}`);
@@ -66,12 +83,32 @@ function App() {
         setError(null);
 
         try {
-            const data = await OntologyService.uploadOntologyFile(file, formatType);
-            setGraphData(data);
-            setShowFileUpload(false);
+            // Read the file content to store for later use
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const fileContent = e.target.result;
+                setOriginalOntology(fileContent);
+
+                // Upload and parse the file through the backend
+                const data = await OntologyService.uploadOntologyFile(file, formatType);
+                setGraphData(data);
+
+                // Get ontology statistics
+                const statsData = await OntologyService.getOntologyStatistics(fileContent, formatType);
+                setStats(statsData);
+
+                setShowFileUpload(false);
+                setIsLoading(false);
+            };
+
+            reader.onerror = () => {
+                setError('Error reading file');
+                setIsLoading(false);
+            };
+
+            reader.readAsText(file);
         } catch (err) {
             setError(`Failed to load graph: ${err.message}`);
-        } finally {
             setIsLoading(false);
         }
     };
@@ -156,15 +193,19 @@ function App() {
 
                 {graphData && !isLoading && !error && (
                     <div className="visualizer-section">
-                        <GraphVisualizer graphData={graphData} />
+                        <GraphVisualizer
+                            graphData={graphData}
+                            originalOntologyData={originalOntology}
+                            formatType={formatType}
+                        />
                         <InteractionGuide />
                     </div>
                 )}
             </main>
 
             <Footer
-                nodeCount={graphData ? graphData.nodes.length : 0}
-                edgeCount={graphData ? graphData.edges.length : 0}
+                nodeCount={stats ? stats.nodeCount : 0}
+                edgeCount={stats ? stats.edgeCount : 0}
             />
         </div>
     );
