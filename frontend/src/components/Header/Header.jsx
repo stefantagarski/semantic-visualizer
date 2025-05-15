@@ -1,7 +1,7 @@
 import React from 'react';
 import './Header.css';
 
-const Header = ({ formatType, setFormatType, onBack }) => {
+const Header = ({ formatType, onBack }) => {
     return (
         <header className="app-header">
             <div className="header-title-container">
@@ -13,18 +13,9 @@ const Header = ({ formatType, setFormatType, onBack }) => {
                 <label htmlFor="format-select" className="format-label">
                     Ontology Format:
                 </label>
-                <select
-                    id="format-select"
-                    value={formatType}
-                    onChange={(e) => setFormatType(e.target.value)}
-                    className="format-select"
-                >
-                    <option value="turtle">Turtle</option>
-                    <option value="rdfxml">RDF/XML</option>
-                    <option value="jsonld">JSON-LD</option>
-                    <option value="ntriples">N-Triples</option>
-                    <option value="trig">TriG</option>
-                </select>
+                <span className="reload-button">
+                {formatType}
+                </span>
                 <button
                     onClick={onBack}
                     className="reload-button"

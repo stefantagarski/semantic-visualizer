@@ -4,6 +4,8 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import InteractionGuide from './components/InteractionGuide';
 import './App.css';
+import OntologyService from './services/OntologyService';
+import FileUploadForm from './components/FileUploadForm'; // Import our new component
 
 function App() {
     const [graphData, setGraphData] = useState(null);
@@ -12,78 +14,100 @@ function App() {
     const [formatType, setFormatType] = useState('turtle');
     const [showForm, setShowForm] = useState(false);
     const [turtleInput, setTurtleInput] = useState('');
+    const [showFileUpload, setShowFileUpload] = useState(false);
 
     const handleParseDataClick = () => {
         setShowForm(true);
+        setShowFileUpload(false);
+        setGraphData(null);
+        setError(null);
+    };
+
+    const handleUploadFileClick = () => {
+        setShowFileUpload(true);
+        setShowForm(false);
         setGraphData(null);
         setError(null);
     };
 
     const handleBackClick = () => {
         setShowForm(false);
+        setShowFileUpload(false);
         setGraphData(null);
         setError(null);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
         setError(null);
 
-        fetch(`http://localhost:8080/api/ontology/parse?format=${formatType}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'text/plain',
-            },
-            body: turtleInput,
-        })
-            .then((res) => {
-                if (!res.ok) {
-                    throw new Error(`HTTP error! status: ${res.status}`);
-                }
-                return res.json();
-            })
-            .then((data) => {
-                setGraphData(data);
-                setIsLoading(false);
-                setShowForm(false);
-            })
-            .catch((err) => {
-                setError(`Failed to load graph: ${err.message}`);
-                setIsLoading(false);
-            });
+        try {
+            const data = await OntologyService.parseOntologyData(turtleInput, formatType);
+            setGraphData(data);
+            setShowForm(false);
+        } catch (err) {
+            setError(`Failed to load graph: ${err.message}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleFileUpload = async (e, file) => {
+        e.preventDefault();
+
+        // Use the file passed from the FileUploadForm component
+        if (!file) {
+            setError('Please select a file to upload');
+            return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const data = await OntologyService.uploadOntologyFile(file, formatType);
+            setGraphData(data);
+            setShowFileUpload(false);
+        } catch (err) {
+            setError(`Failed to load graph: ${err.message}`);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
         <div className="app-container">
-            <Header formatType={formatType}
-                    setFormatType={setFormatType}
-                    onBack={handleBackClick}  />
+            <Header
+                formatType={formatType}
+                setFormatType={setFormatType}
+                onBack={handleBackClick}
+            />
 
             <main className="main-content">
                 {!graphData && (
                     <div className="input-section">
-                        {!showForm ? (
+                        {!showForm && !showFileUpload ? (
                             <div className="welcome-panel">
                                 <h2>Get Started</h2>
                                 <p>Select how you want to provide ontology data.</p>
                                 <div className="action-buttons">
                                     <button onClick={handleParseDataClick} className="primary-btn">Parse Data</button>
-                                    <button className="secondary-btn">Upload File</button>
+                                    <button onClick={handleUploadFileClick} className="secondary-btn">Upload File</button>
                                 </div>
                             </div>
-                        ) : (
-                            <form onSubmit={handleSubmit} className="parse-form">
-                                <h3>Parse Ontology Data</h3>
+                        ) : showForm ? (
+                            <form onSubmit={handleSubmit} className="card-form">
+                                <h2 className="card-title">🧠 Paste Ontology Data</h2>
                                 <textarea
                                     value={turtleInput}
                                     onChange={(e) => setTurtleInput(e.target.value)}
-                                    placeholder="Enter ontology data here..."
+                                    placeholder="Enter ontology data in selected format..."
                                     rows="10"
                                 />
-                                <div className="form-controls">
-                                    <label>
-                                        Format:
+                                <div className="form-footer">
+                                    <div className="format-select">
+                                        <label>Format:</label>
                                         <select
                                             value={formatType}
                                             onChange={(e) => setFormatType(e.target.value)}
@@ -94,17 +118,23 @@ function App() {
                                             <option value="ntriples">N-TRIPLE</option>
                                             <option value="trig">TRIG</option>
                                         </select>
-                                    </label>
+                                    </div>
                                     <div className="form-buttons">
-                                        <button type="submit" disabled={isLoading} className="primary-btn">
+                                        <button type="submit" className="primary-btn" disabled={isLoading}>
                                             {isLoading ? 'Parsing...' : 'Parse'}
                                         </button>
-                                        <button type="button" onClick={handleBackClick} className="secondary-btn">
-                                            Cancel
-                                        </button>
+                                        <button type="button" onClick={handleBackClick} className="secondary-btn">Cancel</button>
                                     </div>
                                 </div>
                             </form>
+                        ) : (
+                            <FileUploadForm
+                                formatType={formatType}
+                                setFormatType={setFormatType}
+                                onSubmit={handleFileUpload}
+                                onCancel={handleBackClick}
+                                isLoading={isLoading}
+                            />
                         )}
                     </div>
                 )}
@@ -126,7 +156,6 @@ function App() {
 
                 {graphData && !isLoading && !error && (
                     <div className="visualizer-section">
-                            {/*<button onClick={handleBackClick} className="secondary-btn">← Back</button>*/}
                         <GraphVisualizer graphData={graphData} />
                         <InteractionGuide />
                     </div>
