@@ -1,7 +1,7 @@
 <h2>Web Application for visualizing semantic data and ontologies </h2>
 
 A web application for visualizing and exploring semantic
-data and ontologies. This project enables users to upload ontology files or connect to SPARQL endpoints and visually navigate complex semantic relationships through an intuitive interface. Developed as the final project of the  Web Programming course at FCSE-Skopje.
+data and ontologies. This project enables users to upload ontology files and visually navigate complex semantic relationships through an intuitive interface. Developed as the final project of the  Web Programming course at FCSE-Skopje.
 Key features include interactive graph visualization, search capabilities, and support for standard semantic web formats. Built with modern web technologies to provide an accessible way to understand and work with semantic structures.<br/>
 
 Developed by: <br/> 
