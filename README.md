@@ -11,9 +11,17 @@ Key features include interactive graph visualization, search capabilities, and s
 ## 🚀 How to Start the Application
 
 This project consists of:
-- A **backend** built with Java Spring Boot (running on port `8080`)
-- A **frontend** built with React + Vite (running on port `5173`)
-
+🔧 Backend (Java Spring Boot — Port 8080)
+    ```bash
+    cd backend
+    ./mvnw spring-boot:run  
+    ```
+- 🌐 Frontend (React + Vite — Port 5173)
+   ```bash
+    cd frontend
+    npm install
+    npm run dev
+    ```
 ### 🧩 Prerequisites
 
 Ensure the following are installed on your system:
