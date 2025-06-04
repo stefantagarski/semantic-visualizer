@@ -11,10 +11,12 @@ Key features include interactive graph visualization, search capabilities, and s
 ## 🚀 How to Start the Application
 
 This project consists of:
-🔧 Backend (Java Spring Boot — Port 8080)
-    ```bash
+
+- 🔧 Backend (Java Spring Boot — Port 8080)
+   ```bash
     cd backend
-    ./mvnw spring-boot:run  
+    ./mvnw spring-boot:run
+    On Windows, use mvnw spring-boot:run instead.
     ```
 - 🌐 Frontend (React + Vite — Port 5173)
    ```bash
