@@ -18,8 +18,6 @@ You can start the application using Docker (recommended) or manually.
 2. Pull and start the containers using Docker Compose:
    ```bash
    docker-compose up -d
-
-
 ### If you prefer manually
 
 - 🔧 Backend (Java Spring Boot — Port 8080)
