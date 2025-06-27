@@ -10,7 +10,14 @@ Key features include interactive graph visualization, search capabilities, and s
 
 ## 🚀 How to Start the Application
 
-This project consists of:
+You can start the application using Docker (recommended) or manually.
+
+### 🐳 Start with Docker
+
+1. Ensure [Docker](https://www.docker.com/products/docker-desktop/) is installed and running.
+2. Pull and start the containers using Docker Compose:
+   ```bash
+   docker-compose up -d
 
 - 🔧 Backend (Java Spring Boot — Port 8080)
    ```bash
