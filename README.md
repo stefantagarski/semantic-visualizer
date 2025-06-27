@@ -19,6 +19,9 @@ You can start the application using Docker (recommended) or manually.
    ```bash
    docker-compose up -d
 
+
+### If you prefer manually
+
 - 🔧 Backend (Java Spring Boot — Port 8080)
    ```bash
     cd backend
