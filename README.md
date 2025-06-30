@@ -17,7 +17,7 @@ You can start the application using Docker (recommended) or manually.
 1. Ensure [Docker](https://www.docker.com/products/docker-desktop/) is installed and running.
 2. Pull and start the containers using Docker Compose:
    ```bash
-   docker-compose up -d
+   docker-compose up --build -d
 ### If you prefer manually
 
 - 🔧 Backend (Java Spring Boot — Port 8080)
