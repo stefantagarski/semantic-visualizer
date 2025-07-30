@@ -1,4 +1,4 @@
-package com.semantic.semanticvisualizer.controller;
+package com.semantic.semanticvisualizer.web.controller;
 
 import com.semantic.semanticvisualizer.model.NodeDetailsDTO;
 import com.semantic.semanticvisualizer.model.OntologyGraphDTO;
