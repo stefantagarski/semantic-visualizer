@@ -37,7 +37,7 @@ You can start the application using Docker (recommended) or manually.
 Ensure the following are installed on your system:
 
 - [Node.js](https://nodejs.org/) (version 18 or higher recommended)
-- [Java JDK](https://adoptium.net/) (version 17 or higher)
+- [Java JDK](https://adoptium.net/) (version 21)
 - [Maven](https://maven.apache.org/) (comes bundled with Spring Boot projects)
 - Git
 
