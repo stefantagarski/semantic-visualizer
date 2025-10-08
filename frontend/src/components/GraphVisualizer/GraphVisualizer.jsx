@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import * as d3 from 'd3';
 import OntologyService from "../../services/OntologyService";
 
@@ -8,10 +8,52 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
     const [nodeDetails, setNodeDetails] = useState(null);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
     const [fadeUnrelated, setFadeUnrelated] = useState(true);
-    const [focusDepth, setFocusDepth] = useState(null); // null means no focus mode
+    const [focusDepth, setFocusDepth] = useState(null);
+    const [showImportanceIndicator, setShowImportanceIndicator] = useState(false);
+    const [selectedRelationships, setSelectedRelationships] = useState(new Set());
+    const [showInteractionGuide, setShowInteractionGuide] = useState(false);
 
-    // store d3 selections to avoid re-rendering
+    // Store D3 selections to avoid re-rendering
     const d3Refs = useRef({});
+
+    // Extract unique relationship types and calculate node degrees
+    const graphMetrics = useMemo(() => {
+        if (!graphData) return {relationshipTypes: [], nodeDegrees: {}};
+
+        const types = new Set();
+        const degrees = {};
+
+        // Initialize all nodes with 0 degree
+        graphData.nodes.forEach(node => {
+            degrees[node.id] = 0;
+        });
+
+        // Count degrees and collect relationship types
+        graphData.edges.forEach(edge => {
+            const label = edge.label || edge.predicate;
+            types.add(label);
+
+            // Count degrees
+            degrees[edge.subject] = (degrees[edge.subject] || 0) + 1;
+            degrees[edge.object] = (degrees[edge.object] || 0) + 1;
+        });
+
+        // Calculate max degree for normalization
+        const maxDegree = Math.max(...Object.values(degrees), 1);
+
+        return {
+            relationshipTypes: Array.from(types).sort(),
+            nodeDegrees: degrees,
+            maxDegree
+        };
+    }, [graphData]);
+
+    // Initialize selected relationships when graph loads
+    useEffect(() => {
+        if (graphMetrics.relationshipTypes.length > 0 && selectedRelationships.size === 0) {
+            setSelectedRelationships(new Set(graphMetrics.relationshipTypes));
+        }
+    }, [graphMetrics.relationshipTypes]);
 
     // BFS to find all nodes within N hops from the selected node
     const getNodesWithinDepth = (startNodeId, depth, links) => {
@@ -45,6 +87,18 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
         return visited;
     };
 
+    // TODO: we will change this when we are going to implement weighted knowlegde graphs
+    const getNodeOpacity = (nodeId) => {
+        if (!showImportanceIndicator) return 1;
+
+        const degree = graphMetrics.nodeDegrees[nodeId] || 0;
+        const normalized = degree / graphMetrics.maxDegree;
+
+        // Map to opacity range: 0.3 (low degree) to 1.0 (high degree)
+        return 0.3 + (normalized * 0.7);
+    };
+
+    // Effect for rendering the graph visualization (only when graphData changes)
     useEffect(() => {
         if (!graphData) return;
 
@@ -52,20 +106,17 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
         const height = window.innerHeight;
 
         const svg = d3.select(svgRef.current);
-        svg.selectAll("*").remove(); // clear previous render
+        svg.selectAll("*").remove();
 
-        // Set background color for the SVG
         const background = svg.append("rect")
             .attr("width", "100%")
             .attr("height", "100%")
             .attr("fill", "#f9fafc")
             .attr("class", "background-rect");
 
-        // Create a container group for the entire graph
         const container = svg.append("g")
             .attr("class", "graph-container");
 
-        // Add zoom functionality with smooth transition
         const zoom = d3.zoom()
             .scaleExtent([0.1, 4])
             .on("zoom", (event) => {
@@ -74,11 +125,9 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
 
         svg.call(zoom);
 
-        // Create grid with reduced code
         const gridSize = 20;
         const grid = container.append("g").attr("class", "grid");
 
-        // Create grid lines more efficiently
         for (let y = 0; y < height; y += gridSize) {
             grid.append("line")
                 .attr("x1", -width).attr("y1", y).attr("x2", width * 2).attr("y2", y)
@@ -90,7 +139,6 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
                 .attr("stroke", "#e5e9f0").attr("stroke-width", 1);
         }
 
-        // Use the nodes and edges directly from the backend
         const nodes = graphData.nodes.map(node => ({ id: node.id, label: node.label }));
         const links = graphData.edges.map(edge => ({
             source: edge.subject,
@@ -98,7 +146,6 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             label: edge.label || edge.predicate
         }));
 
-        // Create link elements
         const link = container.append("g")
             .attr("class", "links")
             .selectAll("line")
@@ -107,9 +154,9 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             .attr("stroke", "#c0d0e5")
             .attr("stroke-width", 2)
             .attr("data-source", d => d.source.id || d.source)
-            .attr("data-target", d => d.target.id || d.target);
+            .attr("data-target", d => d.target.id || d.target)
+            .attr("data-label", d => d.label);
 
-        // Create link label elements
         const linkLabel = container.append("g")
             .attr("class", "link-labels")
             .selectAll("text")
@@ -123,9 +170,9 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             .attr("font-size", 10)
             .attr("text-anchor", "middle")
             .attr("dy", -5)
-            .attr("fill", "#666");
+            .attr("fill", "#666")
+            .attr("data-label", d => d.label);
 
-        // Create node elements
         const node = container.append("g")
             .attr("class", "nodes")
             .selectAll("circle")
@@ -138,6 +185,7 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             .attr("filter", "drop-shadow(0px 2px 3px rgba(0,0,0,0.1))")
             .attr("data-id", d => d.id)
             .attr("class", "node-circle")
+            .attr("fill-opacity", d => getNodeOpacity(d.id))
             .call(d3.drag()
                 .on("start", (event, d) => {
                     if (!event.active) simulation.alphaTarget(0.3).restart();
@@ -154,7 +202,6 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
                     d.fy = null;
                 }));
 
-        // Create node label elements
         const nodeLabel = container.append("g")
             .attr("class", "node-labels")
             .selectAll("text")
@@ -164,9 +211,9 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             .text(d => d.label.length > 20 ? d.label.substring(0, 15) + "..." : d.label)
             .attr("x", 12)
             .attr("y", ".31em")
-            .attr("font-size", 12);
+            .attr("font-size", 12)
+            .attr("opacity", d => getNodeOpacity(d.id));
 
-        //store for later use
         d3Refs.current = {node, link, nodeLabel, linkLabel, links, svg, zoom};
 
         const simulation = d3.forceSimulation(nodes)
@@ -174,14 +221,12 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             .force("charge", d3.forceManyBody().strength(-300))
             .force("center", d3.forceCenter(width / 2, height / 2));
 
-        // Function to handle node click
         const handleNodeClick = (nodeId) => {
-            // Reset all nodes and links to default appearance first
             node.attr("fill", "#6b93c3")
                 .attr("r", 8)
                 .attr("stroke", "#fff")
                 .attr("stroke-width", 2)
-                .attr("fill-opacity", 1);
+                .attr("fill-opacity", d => getNodeOpacity(d.id));
 
             link.attr("stroke", "#c0d0e5")
                 .attr("stroke-width", 2)
@@ -190,22 +235,19 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             nodeLabel.attr("font-weight", "normal")
                 .attr("font-size", 12)
                 .attr("fill", "#000")
-                .attr("opacity", 1);
+                .attr("opacity", d => getNodeOpacity(d.id));
 
             linkLabel.attr("opacity", 0.6)
                 .attr("font-weight", "normal");
 
-            // If no node is selected, we're done (reset state)
             if (!nodeId) {
                 setSelectedNode(null);
                 setNodeDetails(null);
                 return;
             }
 
-            // Set the selected node first
             setSelectedNode(nodeId);
 
-            // Fetch node details from backend if original data available
             if (originalOntologyData) {
                 setIsLoadingDetails(true);
                 OntologyService.getNodeDetails(nodeId, originalOntologyData, formatType)
@@ -219,7 +261,6 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
                     });
             }
 
-            // Highlight the selected node
             node.filter(d => d.id === nodeId)
                 .attr("fill", "#4a6fa5")
                 .attr("r", 12)
@@ -231,7 +272,6 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
                 .attr("font-size", 14)
                 .attr("fill", "#2c4870");
 
-            // Find connected links and nodes (immediate connections)
             const connectedLinks = links.filter(l =>
                 (l.source.id === nodeId || l.source === nodeId) ||
                 (l.target.id === nodeId || l.target === nodeId)
@@ -245,7 +285,6 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
                 if (targetId === nodeId) connectedNodeIds.add(sourceId);
             });
 
-            // Highlight connected links and nodes
             link.filter(l => (l.source.id === nodeId || l.source === nodeId) ||
                 (l.target.id === nodeId || l.target === nodeId))
                 .attr("stroke", "#4a6fa5")
@@ -266,7 +305,6 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
                 .attr("opacity", 1)
                 .attr("font-weight", "bold");
 
-            // Dim non-connected elements
             link.filter(l => !(l.source.id === nodeId || l.source === nodeId) &&
                 !(l.target.id === nodeId || l.target === nodeId))
                 .attr("stroke-opacity", 0.2);
@@ -282,23 +320,20 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
                 .attr("opacity", 0.2);
         };
 
-        // Function to reset the graph
         const resetGraph = () => {
-            // Clear node selection
             handleNodeClick(null);
 
-            // Reset graph visual elements
             node.attr("fill", "#6b93c3")
                 .attr("r", 8)
                 .attr("stroke", "#fff")
                 .attr("stroke-width", 2)
-                .attr("fill-opacity", 1);
+                .attr("fill-opacity", d => getNodeOpacity(d.id));
 
             link.attr("stroke", "#c0d0e5")
                 .attr("stroke-width", 2)
                 .attr("stroke-opacity", 1);
 
-            nodeLabel.attr("opacity", 1)
+            nodeLabel.attr("opacity", d => getNodeOpacity(d.id))
                 .attr("font-size", 12)
                 .attr("fill", "#000")
                 .attr("font-weight", "normal");
@@ -306,17 +341,14 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             linkLabel.attr("opacity", 0.6)
                 .attr("font-weight", "normal");
 
-            // Reset zoom with transition
             svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
         };
 
-        // Add click handlers
         node.on("click", (event, d) => {
             event.stopPropagation();
             selectedNode === d.id ? handleNodeClick(null) : handleNodeClick(d.id);
         });
 
-        // Background click resets the graph
         svg.on("click", event => {
             if (event.target.tagName === 'svg' ||
                 event.target.classList.contains('background-rect')) {
@@ -325,12 +357,10 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             }
         });
 
-        // Apply initial highlighting if there's already a selected node
         if (selectedNode) {
             handleNodeClick(selectedNode);
         }
 
-        // Update positions on simulation tick
         simulation.on("tick", () => {
             link
                 .attr("x1", d => d.source.x)
@@ -353,16 +383,31 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
 
     }, [graphData, originalOntologyData, formatType]);
 
+    // Separate effect to handle highlighting and filtering changes
     useEffect(() => {
-        if (!selectedNode || !d3Refs.current.node) return;
+        if (!d3Refs.current.node) return;
 
         const {node, link, nodeLabel, linkLabel, links} = d3Refs.current;
 
+        // Apply relationship type filtering
+        link.style("display", d => selectedRelationships.has(d.label) ? null : "none");
+        linkLabel.style("display", d => selectedRelationships.has(d.label) ? null : "none");
+
+        // Apply importance indicator
+        if (showImportanceIndicator && !selectedNode) {
+            node.attr("fill-opacity", d => getNodeOpacity(d.id));
+            nodeLabel.attr("opacity", d => getNodeOpacity(d.id));
+        }
+
+        // If no node is selected, just apply filters and return
+        if (!selectedNode) return;
+
+        // Reset all elements first
         node.attr("fill", "#6b93c3")
             .attr("r", 8)
             .attr("stroke", "#fff")
             .attr("stroke-width", 2)
-            .attr("fill-opacity", 1);
+            .attr("fill-opacity", d => getNodeOpacity(d.id));
 
         link.attr("stroke", "#c0d0e5")
             .attr("stroke-width", 2)
@@ -371,22 +416,26 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
         nodeLabel.attr("font-weight", "normal")
             .attr("font-size", 12)
             .attr("fill", "#000")
-            .attr("opacity", 1);
+            .attr("opacity", d => getNodeOpacity(d.id));
 
         linkLabel.attr("opacity", 0.6)
             .attr("font-weight", "normal");
 
+        // Highlight the selected node
         node.filter(d => d.id === selectedNode)
             .attr("fill", "#4a6fa5")
             .attr("r", 12)
             .attr("stroke", "#2c4870")
-            .attr("stroke-width", 2);
+            .attr("stroke-width", 2)
+            .attr("fill-opacity", 1);
 
         nodeLabel.filter(d => d.id === selectedNode)
             .attr("font-weight", "bold")
             .attr("font-size", 14)
-            .attr("fill", "#2c4870");
+            .attr("fill", "#2c4870")
+            .attr("opacity", 1);
 
+        // Find connected nodes (immediate connections)
         const connectedNodeIds = new Set();
         links.forEach(l => {
             const sourceId = l.source.id || l.source;
@@ -395,10 +444,12 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             if (targetId === selectedNode) connectedNodeIds.add(sourceId);
         });
 
+        // Get nodes within focus depth if focus mode is enabled
         const focusedNodes = focusDepth !== null
             ? getNodesWithinDepth(selectedNode, focusDepth, links)
             : null;
 
+        // Highlight connected links and nodes
         link.filter(l => {
             const sourceId = l.source.id || l.source;
             const targetId = l.target.id || l.target;
@@ -412,10 +463,12 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             .attr("fill", "#78a2d8")
             .attr("r", 10)
             .attr("stroke", "#4a6fa5")
-            .attr("stroke-width", 1.5);
+            .attr("stroke-width", 1.5)
+            .attr("fill-opacity", 1);
 
         nodeLabel.filter(d => connectedNodeIds.has(d.id))
-            .attr("font-weight", "bold");
+            .attr("font-weight", "bold")
+            .attr("opacity", 1);
 
         linkLabel.filter(d => {
             const sourceId = d.source.id || d.source;
@@ -425,6 +478,7 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             .attr("opacity", 1)
             .attr("font-weight", "bold");
 
+        // Apply fading based on settings
         if (fadeUnrelated || focusedNodes !== null) {
             let nodesToFade;
             if (focusedNodes !== null) {
@@ -458,10 +512,29 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
                 .attr("opacity", 0.1);
         }
 
-    }, [selectedNode, fadeUnrelated, focusDepth]);
+    }, [selectedNode, fadeUnrelated, focusDepth, showImportanceIndicator, selectedRelationships, graphMetrics]);
+
+    const toggleRelationship = (relType) => {
+        const newSelected = new Set(selectedRelationships);
+        if (newSelected.has(relType)) {
+            newSelected.delete(relType);
+        } else {
+            newSelected.add(relType);
+        }
+        setSelectedRelationships(newSelected);
+    };
+
+    const toggleAllRelationships = () => {
+        if (selectedRelationships.size === graphMetrics.relationshipTypes.length) {
+            setSelectedRelationships(new Set());
+        } else {
+            setSelectedRelationships(new Set(graphMetrics.relationshipTypes));
+        }
+    };
 
     return (
         <div className="graph-container" style={{ width: '100%', height: '100%', position: 'relative' }}>
+            {/* Control Panel */}
             <div style={{
                 position: 'absolute',
                 top: '20px',
@@ -473,12 +546,16 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
                 backdropFilter: 'blur(5px)',
                 border: '1px solid rgba(220, 220, 220, 0.8)',
                 zIndex: 10,
-                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
+                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+                maxHeight: '70vh',
+                overflowY: 'auto',
+                width: '260px'
             }}>
                 <h4 style={{margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600', color: '#333'}}>
                     View Controls
                 </h4>
 
+                {/* Fade Unrelated Toggle */}
                 <label style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -494,6 +571,24 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
                         style={{marginRight: '8px', cursor: 'pointer'}}
                     />
                     Fade Unrelated Nodes
+                </label>
+
+                {/* Node Importance Indicator */}
+                <label style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    marginBottom: '12px',
+                    fontSize: '13px',
+                    color: '#555'
+                }}>
+                    <input
+                        type="checkbox"
+                        checked={showImportanceIndicator}
+                        onChange={(e) => setShowImportanceIndicator(e.target.checked)}
+                        style={{marginRight: '8px', cursor: 'pointer'}}
+                    />
+                    Show Node Importance
                 </label>
 
                 {/* Focus Mode Depth Selector */}
@@ -529,6 +624,64 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
                             Select a node to enable
                         </div>
                     )}
+                </div>
+
+                {/* Relationship Type Filter */}
+                <div style={{marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e0e0e0'}}>
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '8px'
+                    }}>
+                        <label style={{fontSize: '13px', color: '#555'}}>
+                            Relationship Types
+                        </label>
+                        <button
+                            onClick={toggleAllRelationships}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#4a6fa5',
+                                fontSize: '11px',
+                                cursor: 'pointer',
+                                textDecoration: 'underline'
+                            }}
+                        >
+                            {selectedRelationships.size === graphMetrics.relationshipTypes.length ? 'None' : 'All'}
+                        </button>
+                    </div>
+                    <div style={{maxHeight: '200px', overflowY: 'auto', fontSize: '12px'}}>
+                        {graphMetrics.relationshipTypes.map(relType => (
+                            <label
+                                key={relType}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    cursor: 'pointer',
+                                    marginBottom: '6px',
+                                    padding: '4px',
+                                    borderRadius: '4px',
+                                    backgroundColor: selectedRelationships.has(relType) ? '#f0f4ff' : 'transparent'
+                                }}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={selectedRelationships.has(relType)}
+                                    onChange={() => toggleRelationship(relType)}
+                                    style={{marginRight: '8px', cursor: 'pointer'}}
+                                />
+                                <span style={{
+                                    flex: 1,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                }} title={relType}>
+                                    {relType}
+                                </span>
+                            </label>
+                        ))}
+                    </div>
                 </div>
             </div>
 
@@ -594,6 +747,26 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
                                     {nodeDetails?.label || selectedNode.split('#').pop()}
                                 </div>
                             </div>
+
+                            {showImportanceIndicator && (
+                                <div style={{
+                                    padding: '12px',
+                                    backgroundColor: '#fff3cd',
+                                    borderRadius: '6px',
+                                    marginBottom: '16px',
+                                    borderLeft: '4px solid #ffc107'
+                                }}>
+                                    <div style={{fontSize: '13px', color: '#666', marginBottom: '4px'}}>NODE
+                                        IMPORTANCE
+                                    </div>
+                                    <div style={{fontWeight: '500'}}>
+                                        {graphMetrics.nodeDegrees[selectedNode] || 0} connections
+                                        <span style={{fontSize: '11px', color: '#666', marginLeft: '8px'}}>
+                                            ({Math.round(getNodeOpacity(selectedNode) * 100)}% opacity)
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
 
                             <div style={{
                                 padding: '12px',

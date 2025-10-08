@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import GraphVisualizer from './components/GraphVisualizer';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -17,6 +17,7 @@ function App() {
     const [showFileUpload, setShowFileUpload] = useState(false);
     const [originalOntology, setOriginalOntology] = useState(null);
     const [stats, setStats] = useState(null);
+    const [showInteractionGuide, setShowInteractionGuide] = useState(false);
 
     const handleParseDataClick = () => {
         setShowForm(true);
@@ -198,7 +199,44 @@ function App() {
                             originalOntologyData={originalOntology}
                             formatType={formatType}
                         />
-                        <InteractionGuide />
+
+                        <button
+                            onClick={() => setShowInteractionGuide(!showInteractionGuide)}
+                            style={{
+                                position: 'fixed',
+                                bottom: '70px',
+                                right: '24px',
+                                width: '48px',
+                                height: '48px',
+                                borderRadius: '50%',
+                                background: 'rgba(74, 111, 165, 0.95)',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '24px',
+                                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+                                transition: 'all 0.2s',
+                                zIndex: 1000,
+                                color: 'white',
+                                fontWeight: 'bold'
+                            }}
+                            onMouseOver={(e) => {
+                                e.currentTarget.style.transform = 'scale(1.1)';
+                                e.currentTarget.style.background = 'rgba(74, 111, 165, 1)';
+                            }}
+                            onMouseOut={(e) => {
+                                e.currentTarget.style.transform = 'scale(1)';
+                                e.currentTarget.style.background = 'rgba(74, 111, 165, 0.95)';
+                            }}
+                            title="Interaction Guide"
+                        >
+                            ?
+                        </button>
+
+                        {/* Interaction Guide Panel */}
+                        {showInteractionGuide && <InteractionGuide/>}
                     </div>
                 )}
             </main>
