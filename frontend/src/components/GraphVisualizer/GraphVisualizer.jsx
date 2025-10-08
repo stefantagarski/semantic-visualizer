@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import * as d3 from 'd3';
 import OntologyService from "../../services/OntologyService";
 
@@ -7,8 +7,44 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
     const [selectedNode, setSelectedNode] = useState(null);
     const [nodeDetails, setNodeDetails] = useState(null);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+    const [fadeUnrelated, setFadeUnrelated] = useState(true);
+    const [focusDepth, setFocusDepth] = useState(null); // null means no focus mode
 
-    // Effect for rendering the graph visualization
+    // store d3 selections to avoid re-rendering
+    const d3Refs = useRef({});
+
+    // BFS to find all nodes within N hops from the selected node
+    const getNodesWithinDepth = (startNodeId, depth, links) => {
+        if (depth === null) {
+            return null;
+        }
+
+        const visited = new Set([startNodeId]);
+        let currentLevel = [startNodeId];
+
+        for (let i = 0; i < depth; i++) {
+            const nextLevel = [];
+            currentLevel.forEach(nodeId => {
+                links.forEach(link => {
+                    const sourceId = link.source.id || link.source;
+                    const targetId = link.target.id || link.target;
+
+                    if (sourceId === nodeId && !visited.has(targetId)) {
+                        visited.add(targetId);
+                        nextLevel.push(targetId);
+                    }
+                    if (targetId === nodeId && !visited.has(sourceId)) {
+                        visited.add(sourceId);
+                        nextLevel.push(sourceId);
+                    }
+                });
+            });
+            currentLevel = nextLevel;
+        }
+
+        return visited;
+    };
+
     useEffect(() => {
         if (!graphData) return;
 
@@ -130,7 +166,9 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             .attr("y", ".31em")
             .attr("font-size", 12);
 
-        // Set up force simulation
+        //store for later use
+        d3Refs.current = {node, link, nodeLabel, linkLabel, links, svg, zoom};
+
         const simulation = d3.forceSimulation(nodes)
             .force("link", d3.forceLink(links).id(d => d.id).distance(150))
             .force("charge", d3.forceManyBody().strength(-300))
@@ -139,19 +177,23 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
         // Function to handle node click
         const handleNodeClick = (nodeId) => {
             // Reset all nodes and links to default appearance first
-            node.attr("fill", "#2e8783")
+            node.attr("fill", "#6b93c3")
                 .attr("r", 8)
-                .attr("stroke", null)
-                .attr("stroke-width", 0);
-
-            link.attr("stroke", "#999")
+                .attr("stroke", "#fff")
                 .attr("stroke-width", 2)
-                .attr("stroke-opacity", 0.6);
+                .attr("fill-opacity", 1);
+
+            link.attr("stroke", "#c0d0e5")
+                .attr("stroke-width", 2)
+                .attr("stroke-opacity", 1);
 
             nodeLabel.attr("font-weight", "normal")
-                .attr("font-size", 12);
+                .attr("font-size", 12)
+                .attr("fill", "#000")
+                .attr("opacity", 1);
 
-            linkLabel.attr("opacity", 0.6);
+            linkLabel.attr("opacity", 0.6)
+                .attr("font-weight", "normal");
 
             // If no node is selected, we're done (reset state)
             if (!nodeId) {
@@ -189,7 +231,7 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
                 .attr("font-size", 14)
                 .attr("fill", "#2c4870");
 
-            // Find connected links and nodes
+            // Find connected links and nodes (immediate connections)
             const connectedLinks = links.filter(l =>
                 (l.source.id === nodeId || l.source === nodeId) ||
                 (l.target.id === nodeId || l.target === nodeId)
@@ -258,9 +300,11 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
 
             nodeLabel.attr("opacity", 1)
                 .attr("font-size", 12)
-                .attr("fill", "#000");
+                .attr("fill", "#000")
+                .attr("font-weight", "normal");
 
-            linkLabel.attr("opacity", 0.6);
+            linkLabel.attr("opacity", 0.6)
+                .attr("font-weight", "normal");
 
             // Reset zoom with transition
             svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
@@ -309,9 +353,187 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
 
     }, [graphData, originalOntologyData, formatType]);
 
+    useEffect(() => {
+        if (!selectedNode || !d3Refs.current.node) return;
+
+        const {node, link, nodeLabel, linkLabel, links} = d3Refs.current;
+
+        node.attr("fill", "#6b93c3")
+            .attr("r", 8)
+            .attr("stroke", "#fff")
+            .attr("stroke-width", 2)
+            .attr("fill-opacity", 1);
+
+        link.attr("stroke", "#c0d0e5")
+            .attr("stroke-width", 2)
+            .attr("stroke-opacity", 1);
+
+        nodeLabel.attr("font-weight", "normal")
+            .attr("font-size", 12)
+            .attr("fill", "#000")
+            .attr("opacity", 1);
+
+        linkLabel.attr("opacity", 0.6)
+            .attr("font-weight", "normal");
+
+        node.filter(d => d.id === selectedNode)
+            .attr("fill", "#4a6fa5")
+            .attr("r", 12)
+            .attr("stroke", "#2c4870")
+            .attr("stroke-width", 2);
+
+        nodeLabel.filter(d => d.id === selectedNode)
+            .attr("font-weight", "bold")
+            .attr("font-size", 14)
+            .attr("fill", "#2c4870");
+
+        const connectedNodeIds = new Set();
+        links.forEach(l => {
+            const sourceId = l.source.id || l.source;
+            const targetId = l.target.id || l.target;
+            if (sourceId === selectedNode) connectedNodeIds.add(targetId);
+            if (targetId === selectedNode) connectedNodeIds.add(sourceId);
+        });
+
+        const focusedNodes = focusDepth !== null
+            ? getNodesWithinDepth(selectedNode, focusDepth, links)
+            : null;
+
+        link.filter(l => {
+            const sourceId = l.source.id || l.source;
+            const targetId = l.target.id || l.target;
+            return sourceId === selectedNode || targetId === selectedNode;
+        })
+            .attr("stroke", "#4a6fa5")
+            .attr("stroke-width", 3)
+            .attr("stroke-opacity", 1);
+
+        node.filter(d => connectedNodeIds.has(d.id))
+            .attr("fill", "#78a2d8")
+            .attr("r", 10)
+            .attr("stroke", "#4a6fa5")
+            .attr("stroke-width", 1.5);
+
+        nodeLabel.filter(d => connectedNodeIds.has(d.id))
+            .attr("font-weight", "bold");
+
+        linkLabel.filter(d => {
+            const sourceId = d.source.id || d.source;
+            const targetId = d.target.id || d.target;
+            return sourceId === selectedNode || targetId === selectedNode;
+        })
+            .attr("opacity", 1)
+            .attr("font-weight", "bold");
+
+        if (fadeUnrelated || focusedNodes !== null) {
+            let nodesToFade;
+            if (focusedNodes !== null) {
+                nodesToFade = d => d.id !== selectedNode && !focusedNodes.has(d.id);
+            } else if (fadeUnrelated) {
+                nodesToFade = d => d.id !== selectedNode && !connectedNodeIds.has(d.id);
+            }
+
+            node.filter(nodesToFade)
+                .attr("fill-opacity", 0.15);
+
+            nodeLabel.filter(nodesToFade)
+                .attr("opacity", 0.15);
+
+            const linkShouldBeFaded = (l) => {
+                const sourceId = l.source.id || l.source;
+                const targetId = l.target.id || l.target;
+
+                if (focusedNodes !== null) {
+                    return !focusedNodes.has(sourceId) || !focusedNodes.has(targetId);
+                } else if (fadeUnrelated) {
+                    return sourceId !== selectedNode && targetId !== selectedNode;
+                }
+                return false;
+            };
+
+            link.filter(linkShouldBeFaded)
+                .attr("stroke-opacity", 0.1);
+
+            linkLabel.filter(linkShouldBeFaded)
+                .attr("opacity", 0.1);
+        }
+
+    }, [selectedNode, fadeUnrelated, focusDepth]);
+
     return (
         <div className="graph-container" style={{ width: '100%', height: '100%', position: 'relative' }}>
+            <div style={{
+                position: 'absolute',
+                top: '20px',
+                left: '20px',
+                background: 'rgba(255, 255, 255, 0.95)',
+                padding: '16px',
+                borderRadius: '8px',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+                backdropFilter: 'blur(5px)',
+                border: '1px solid rgba(220, 220, 220, 0.8)',
+                zIndex: 10,
+                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
+            }}>
+                <h4 style={{margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600', color: '#333'}}>
+                    View Controls
+                </h4>
+
+                <label style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    marginBottom: '12px',
+                    fontSize: '13px',
+                    color: '#555'
+                }}>
+                    <input
+                        type="checkbox"
+                        checked={fadeUnrelated}
+                        onChange={(e) => setFadeUnrelated(e.target.checked)}
+                        style={{marginRight: '8px', cursor: 'pointer'}}
+                    />
+                    Fade Unrelated Nodes
+                </label>
+
+                {/* Focus Mode Depth Selector */}
+                <div style={{marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e0e0e0'}}>
+                    <label style={{fontSize: '13px', color: '#555', display: 'block', marginBottom: '8px'}}>
+                        Focus Mode
+                    </label>
+                    <select
+                        value={focusDepth === null ? 'off' : focusDepth}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setFocusDepth(val === 'off' ? null : parseInt(val));
+                        }}
+                        style={{
+                            width: '100%',
+                            padding: '6px 8px',
+                            borderRadius: '4px',
+                            border: '1px solid #d0d0d0',
+                            fontSize: '13px',
+                            cursor: 'pointer',
+                            backgroundColor: 'white'
+                        }}
+                        disabled={!selectedNode}
+                    >
+                        <option value="off">Off</option>
+                        <option value="1">1 hop</option>
+                        <option value="2">2 hops</option>
+                        <option value="3">3 hops</option>
+                        <option value="4">4 hops</option>
+                    </select>
+                    {!selectedNode && (
+                        <div style={{fontSize: '11px', color: '#999', marginTop: '4px'}}>
+                            Select a node to enable
+                        </div>
+                    )}
+                </div>
+            </div>
+
             <svg ref={svgRef} width="100%" height="100%" />
+
             {selectedNode && (
                 <div className="info-panel" style={{
                     position: 'absolute',
