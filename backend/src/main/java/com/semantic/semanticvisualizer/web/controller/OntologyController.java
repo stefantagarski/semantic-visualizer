@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 @Controller
 @RequestMapping("/api/ontology")
@@ -25,13 +25,20 @@ public class OntologyController {
     }
 
     /**
-     * Parse ontology data from raw input
+     * Parse ontology data - automatically limits to 500 nodes if larger
+     * Add ?maxNodes=1000 to customize the limit
      */
     @PostMapping("/parse")
-    public ResponseEntity<?> parseOntology(@RequestBody String ontologyContent,
-                                           @RequestParam(defaultValue = "turtle") String format) {
+    public ResponseEntity<?> parseOntology(
+            @RequestBody String ontologyContent,
+            @RequestParam(defaultValue = "turtle") String format,
+            @RequestParam(required = false) Integer maxNodes) {
         try {
-            OntologyGraphDTO graph = ontologyService.parseOntology(ontologyContent, format);
+            OntologyGraphDTO graph;
+
+            graph = ontologyService.parseOntologyWithLimit(ontologyContent, format,
+                    Objects.requireNonNullElse(maxNodes, 500));
+
             return ResponseEntity.ok(graph);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -42,17 +49,28 @@ public class OntologyController {
     }
 
     /**
-     * Parse ontology data from uploaded file
+     * Upload file with automatic optimization
      */
     @PostMapping("/upload")
-    public ResponseEntity<?> uploadOntologyFile(@RequestParam("file") MultipartFile file,
-                                                @RequestParam(defaultValue = "turtle") String format) {
+    public ResponseEntity<?> uploadOntologyFile(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(defaultValue = "turtle") String format,
+            @RequestParam(required = false) Integer maxNodes) {
         try {
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body("Please select a file to upload");
             }
 
-            OntologyGraphDTO graph = ontologyService.parseOntologyFile(file, format);
+            // Read file content
+            String content = new String(file.getBytes());
+
+            // Parse with limit
+            OntologyGraphDTO graph = ontologyService.parseOntologyWithLimit(
+                    content,
+                    format,
+                    maxNodes != null ? maxNodes : 500
+            );
+
             return ResponseEntity.ok(graph);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -65,13 +83,11 @@ public class OntologyController {
         }
     }
 
-    /**
-     * Get details for a specific node
-     */
     @PostMapping("/node-details/{nodeId}")
-    public ResponseEntity<?> getNodeDetails(@PathVariable String nodeId,
-                                            @RequestBody String ontologyContent,
-                                            @RequestParam(defaultValue = "turtle") String format) {
+    public ResponseEntity<?> getNodeDetails(
+            @PathVariable String nodeId,
+            @RequestBody String ontologyContent,
+            @RequestParam(defaultValue = "turtle") String format) {
         try {
             NodeDetailsDTO details = ontologyService.getNodeDetails(nodeId, ontologyContent, format);
             return ResponseEntity.ok(details);
@@ -83,12 +99,10 @@ public class OntologyController {
         }
     }
 
-    /**
-     * Get statistics about an ontology
-     */
     @PostMapping("/statistics")
-    public ResponseEntity<?> getOntologyStatistics(@RequestBody String ontologyContent,
-                                                   @RequestParam(defaultValue = "turtle") String format) {
+    public ResponseEntity<?> getOntologyStatistics(
+            @RequestBody String ontologyContent,
+            @RequestParam(defaultValue = "turtle") String format) {
         try {
             OntologyStatsDTO stats = ontologyService.getOntologyStatistics(ontologyContent, format);
             return ResponseEntity.ok(stats);

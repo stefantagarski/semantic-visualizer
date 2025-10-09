@@ -49,4 +49,6 @@ public interface OntologyService {
      * @return Statistics about the ontology
      */
     OntologyStatsDTO getOntologyStatistics(String ontologyContent, String format);
+
+    OntologyGraphDTO parseOntologyWithLimit(String ontologyContent, String format, Integer maxNodes);
 }

@@ -52,17 +52,11 @@ function App() {
         setError(null);
 
         try {
-            // Store the original ontology data for later use
             setOriginalOntology(turtleInput);
-
-            // Parse the ontology data through the backend
             const data = await OntologyService.parseOntologyData(turtleInput, formatType);
             setGraphData(data);
-
-            // Get ontology statistics
             const statsData = await OntologyService.getOntologyStatistics(turtleInput, formatType);
             setStats(statsData);
-
             setShowForm(false);
         } catch (err) {
             setError(`Failed to load graph: ${err.message}`);
@@ -74,7 +68,6 @@ function App() {
     const handleFileUpload = async (e, file) => {
         e.preventDefault();
 
-        // Use the file passed from the FileUploadForm component
         if (!file) {
             setError('Please select a file to upload');
             return;
@@ -84,17 +77,14 @@ function App() {
         setError(null);
 
         try {
-            // Read the file content to store for later use
             const reader = new FileReader();
             reader.onload = async (e) => {
                 const fileContent = e.target.result;
                 setOriginalOntology(fileContent);
 
-                // Upload and parse the file through the backend
                 const data = await OntologyService.uploadOntologyFile(file, formatType);
                 setGraphData(data);
 
-                // Get ontology statistics
                 const statsData = await OntologyService.getOntologyStatistics(fileContent, formatType);
                 setStats(statsData);
 
@@ -159,7 +149,14 @@ function App() {
                                     </div>
                                     <div className="form-buttons">
                                         <button type="submit" className="primary-btn" disabled={isLoading}>
-                                            {isLoading ? 'Parsing...' : 'Parse'}
+                                            {isLoading ? (
+                                                <>
+                                                    <span className="button-spinner"></span>
+                                                    Parsing...
+                                                </>
+                                            ) : (
+                                                'Parse'
+                                            )}
                                         </button>
                                         <button type="button" onClick={handleBackClick} className="secondary-btn">Cancel</button>
                                     </div>
@@ -178,9 +175,9 @@ function App() {
                 )}
 
                 {isLoading && (
-                    <div className="loading-panel">
-                        <div className="spinner" />
-                        <p>Parsing and generating graph...</p>
+                    <div className="loading-overlay">
+                        <div className="loading-spinner"></div>
+                        <p className="loading-text">Parsing ontology and building graph...</p>
                     </div>
                 )}
 
@@ -235,7 +232,6 @@ function App() {
                             ?
                         </button>
 
-                        {/* Interaction Guide Panel */}
                         {showInteractionGuide && <InteractionGuide/>}
                     </div>
                 )}
