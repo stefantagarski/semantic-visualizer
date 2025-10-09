@@ -7,6 +7,7 @@ import com.semantic.semanticvisualizer.service.OntologyService;
 import com.semantic.semanticvisualizer.service.impl.ontologyHelpers.OntologyGraphBuilder;
 import com.semantic.semanticvisualizer.service.impl.ontologyHelpers.OntologyModelLoader;
 import com.semantic.semanticvisualizer.service.impl.ontologyHelpers.OntologyNodeDetails;
+import com.semantic.semanticvisualizer.service.impl.ontologyHelpers.OntologySampler;
 import org.apache.jena.rdf.model.Model;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,10 +21,11 @@ public class OntologyServiceImplementation implements OntologyService {
 
     private final OntologyModelLoader modelLoader;
     private final OntologyGraphBuilder graphBuilder;
-    private final com.semantic.semanticvisualizer.service.implementation.OntologySampler sampler;
+    private final OntologySampler sampler;
     private final OntologyNodeDetails nodeDetailsService;
 
-    public OntologyServiceImplementation(OntologyModelLoader modelLoader, OntologyGraphBuilder graphBuilder, com.semantic.semanticvisualizer.service.implementation.OntologySampler sampler, OntologyNodeDetails nodeDetailsService) {
+    public OntologyServiceImplementation(OntologyModelLoader modelLoader, OntologyGraphBuilder graphBuilder
+            , OntologySampler sampler, OntologyNodeDetails nodeDetailsService) {
         this.modelLoader = modelLoader;
         this.graphBuilder = graphBuilder;
         this.sampler = sampler;
