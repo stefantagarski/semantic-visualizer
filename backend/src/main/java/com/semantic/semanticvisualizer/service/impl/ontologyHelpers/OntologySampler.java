@@ -1,4 +1,4 @@
-package com.semantic.semanticvisualizer.service.implementation;
+package com.semantic.semanticvisualizer.service.impl.ontologyHelpers;
 
 import com.semantic.semanticvisualizer.model.EdgeDTO;
 import com.semantic.semanticvisualizer.model.NodeDTO;
