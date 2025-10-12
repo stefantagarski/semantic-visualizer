@@ -38,15 +38,22 @@ public class OntologyModelLoader {
             throw new IllegalArgumentException("Format cannot be null");
         }
 
-        return switch (format.toLowerCase().trim()) {
-            case "rdfxml", "rdf/xml" -> Lang.RDFXML.getName();
-            case "jsonld", "json-ld" -> Lang.JSONLD.getName();
-            case "ntriples", "n-triples", "nt" -> Lang.NTRIPLES.getName();
-            case "trig" -> Lang.TRIG.getName();
-            case "turtle", "ttl" -> Lang.TURTLE.getName();
-            default ->
-                    throw new IllegalArgumentException("Unsupported format: " + format + ". Supported formats: turtle, rdfxml, jsonld, ntriples, trig, nquads");
-        };
+        String normalizedFormat = format.toLowerCase().trim();
+
+        if (normalizedFormat.equals("rdfxml") || normalizedFormat.equals("rdf/xml")) {
+            return Lang.RDFXML.getName();
+        } else if (normalizedFormat.equals("jsonld") || normalizedFormat.equals("json-ld")) {
+            return Lang.JSONLD.getName();
+        } else if (normalizedFormat.equals("ntriples") || normalizedFormat.equals("n-triples")
+                || normalizedFormat.equals("nt")) {
+            return Lang.NTRIPLES.getName();
+        } else if (normalizedFormat.equals("trig")) {
+            return Lang.TRIG.getName();
+        } else if (normalizedFormat.equals("turtle") || normalizedFormat.equals("ttl")) {
+            return Lang.TURTLE.getName();
+        } else {
+            throw new IllegalArgumentException("Unsupported format: " + format + ". Supported formats: turtle, rdfxml, jsonld, ntriples, trig, nquads");
+        }
     }
 
     public Model loadModelFromFile(MultipartFile file, String format) throws IOException {
