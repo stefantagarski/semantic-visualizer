@@ -23,7 +23,9 @@ class OntologyService {
             return response.data;
         } catch (error) {
             console.error('Error parsing ontology data:', error);
-            throw new Error(error.response?.data || 'Failed to parse ontology data');
+            console.error('Error response:', error.response);
+            const errorMessage = error.response?.data || error.message || 'Failed to parse ontology data';
+            throw new Error(errorMessage);
         }
     }
 
@@ -50,7 +52,9 @@ class OntologyService {
             return response.data;
         } catch (error) {
             console.error('Error uploading ontology file:', error);
-            throw new Error(error.response?.data || 'Failed to upload ontology file');
+            console.error('Error response:', error.response);
+            const errorMessage = error.response?.data || error.message || 'Failed to upload ontology file';
+            throw new Error(errorMessage);
         }
     }
 
@@ -75,7 +79,9 @@ class OntologyService {
             return response.data;
         } catch (error) {
             console.error('Error fetching node details:', error);
-            throw new Error(error.response?.data || 'Failed to fetch node details');
+            console.error('Error response:', error.response);
+            const errorMessage = error.response?.data || error.message || 'Failed to fetch node details';
+            throw new Error(errorMessage);
         }
     }
 
@@ -99,7 +105,9 @@ class OntologyService {
             return response.data;
         } catch (error) {
             console.error('Error fetching ontology statistics:', error);
-            throw new Error(error.response?.data || 'Failed to fetch ontology statistics');
+            console.error('Error response:', error.response);
+            const errorMessage = error.response?.data || error.message || 'Failed to fetch ontology statistics';
+            throw new Error(errorMessage);
         }
     }
 }

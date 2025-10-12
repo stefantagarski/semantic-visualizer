@@ -26,6 +26,7 @@ function App() {
         setError(null);
         setOriginalOntology(null);
         setStats(null);
+        setTurtleInput('');
     };
 
     const handleUploadFileClick = () => {
@@ -35,6 +36,7 @@ function App() {
         setError(null);
         setOriginalOntology(null);
         setStats(null);
+        setTurtleInput('');
     };
 
     const handleBackClick = () => {
@@ -44,6 +46,7 @@ function App() {
         setError(null);
         setOriginalOntology(null);
         setStats(null);
+        setTurtleInput(''); // ✅ Clears the textarea content when going back
     };
 
     const handleSubmit = async (e) => {
@@ -158,7 +161,13 @@ function App() {
                                                 'Parse'
                                             )}
                                         </button>
-                                        <button type="button" onClick={handleBackClick} className="secondary-btn">Cancel</button>
+                                        <button
+                                            type="button"
+                                            onClick={handleBackClick}
+                                            className="secondary-btn"
+                                        >
+                                            Cancel
+                                        </button>
                                     </div>
                                 </div>
                             </form>
