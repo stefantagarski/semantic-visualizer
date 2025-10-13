@@ -18,8 +18,10 @@ function App() {
     const [originalOntology, setOriginalOntology] = useState(null);
     const [stats, setStats] = useState(null);
     const [showInteractionGuide, setShowInteractionGuide] = useState(false);
+    const [selectedNode, setSelectedNode] = useState(null)
 
     const handleParseDataClick = () => {
+        setSelectedNode(null);
         setShowForm(true);
         setShowFileUpload(false);
         setGraphData(null);
@@ -30,6 +32,7 @@ function App() {
     };
 
     const handleUploadFileClick = () => {
+        setSelectedNode(null);
         setShowFileUpload(true);
         setShowForm(false);
         setGraphData(null);
@@ -40,13 +43,14 @@ function App() {
     };
 
     const handleBackClick = () => {
+        setSelectedNode(null);
         setShowForm(false);
         setShowFileUpload(false);
         setGraphData(null);
         setError(null);
         setOriginalOntology(null);
         setStats(null);
-        setTurtleInput(''); // ✅ Clears the textarea content when going back
+        setTurtleInput(''); // Clears the textarea content when going back
     };
 
     const handleSubmit = async (e) => {
@@ -71,6 +75,7 @@ function App() {
     const handleFileUpload = async (e, file) => {
         e.preventDefault();
 
+        // Use the file passed from the FileUploadForm component
         if (!file) {
             setError('Please select a file to upload');
             return;
@@ -80,14 +85,17 @@ function App() {
         setError(null);
 
         try {
+            // Read the file content to store for later use
             const reader = new FileReader();
             reader.onload = async (e) => {
                 const fileContent = e.target.result;
                 setOriginalOntology(fileContent);
 
+                // Upload and parse the file through the backend
                 const data = await OntologyService.uploadOntologyFile(file, formatType);
                 setGraphData(data);
 
+                // Get ontology statistics
                 const statsData = await OntologyService.getOntologyStatistics(fileContent, formatType);
                 setStats(statsData);
 
@@ -113,6 +121,9 @@ function App() {
                 formatType={formatType}
                 setFormatType={setFormatType}
                 onBack={handleBackClick}
+                graphData={graphData}
+                onNodeSelect={setSelectedNode}
+                selectedNode={selectedNode}
             />
 
             <main className="main-content">
@@ -204,6 +215,8 @@ function App() {
                             graphData={graphData}
                             originalOntologyData={originalOntology}
                             formatType={formatType}
+                            selectedNode={selectedNode}
+                            onNodeSelect={setSelectedNode}
                         />
 
                         <button
@@ -241,6 +254,7 @@ function App() {
                             ?
                         </button>
 
+                        {/* Interaction Guide Panel */}
                         {showInteractionGuide && <InteractionGuide/>}
                     </div>
                 )}

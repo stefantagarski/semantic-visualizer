@@ -2,7 +2,7 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import * as d3 from 'd3';
 import OntologyService from "../../services/OntologyService";
 
-const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
+const GraphVisualizer = ({ graphData, originalOntologyData, formatType, selectedNode: externalSelectedNode, onNodeSelect }) => {
     const svgRef = useRef();
     const [selectedNode, setSelectedNode] = useState(null);
     const [nodeDetails, setNodeDetails] = useState(null);
@@ -88,7 +88,7 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
         return visited;
     };
 
-    // TODO: we will change this when we are going to implement weighted knowlegde graphs
+    // TODO: we will change this when we are going to implement weighted knowledge graphs
     const getNodeOpacity = (nodeId) => {
         if (!showImportanceIndicator) return 1;
 
@@ -244,10 +244,14 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
             if (!nodeId) {
                 setSelectedNode(null);
                 setNodeDetails(null);
+
+                if(onNodeSelect) onNodeSelect(null);
                 return;
             }
 
             setSelectedNode(nodeId);
+
+            if (onNodeSelect) onNodeSelect(nodeId);
 
             if (originalOntologyData) {
                 setIsLoadingDetails(true);
@@ -383,6 +387,27 @@ const GraphVisualizer = ({ graphData, originalOntologyData, formatType }) => {
         });
 
     }, [graphData, originalOntologyData, formatType]);
+
+    // Handle external node selection (from search bar)
+    useEffect(() => {
+        if (externalSelectedNode !== selectedNode) {
+            setSelectedNode(externalSelectedNode);
+            if (externalSelectedNode && originalOntologyData) {
+                setIsLoadingDetails(true);
+                OntologyService.getNodeDetails(externalSelectedNode, originalOntologyData, formatType)
+                    .then(details => {
+                        setNodeDetails(details);
+                        setIsLoadingDetails(false);
+                    })
+                    .catch(error => {
+                        console.error("Error fetching node details:", error);
+                        setIsLoadingDetails(false);
+                    });
+            } else if (!externalSelectedNode) {
+                setNodeDetails(null);
+            }
+        }
+    }, [externalSelectedNode, originalOntologyData, formatType, selectedNode]);
 
     // Separate effect to handle highlighting and filtering changes
     useEffect(() => {
