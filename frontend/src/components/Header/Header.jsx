@@ -1,6 +1,6 @@
 import React from 'react';
 import './Header.css';
-import SearchBar from "../GraphVisualizer/SearchBar";
+import SearchBar from "../GraphVisualizer/search-bar/SearchBar.jsx";
 
 const Header = ({ formatType, onBack, graphData, onNodeSelect, selectedNode }) => {
     return (
