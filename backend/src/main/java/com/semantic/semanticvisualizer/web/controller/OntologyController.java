@@ -16,7 +16,7 @@ import java.util.Objects;
 
 @Controller
 @RequestMapping("/api/ontology")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"}) // Allow CORS for development frontends
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
 public class OntologyController {
 
     private final OntologyService ontologyService;

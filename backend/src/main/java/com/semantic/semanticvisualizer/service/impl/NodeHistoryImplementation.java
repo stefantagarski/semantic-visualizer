@@ -9,28 +9,38 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class NodeHistoryImplementation implements NodeHistoryService {
 
     private final List<NodeHistoryDTO> clickHistory = new ArrayList<>();
 
-    // Store click history per session
-//    private static final Map<String, List<NodeHistoryDTO>> sessionClickHistory = new ConcurrentHashMap<>();
+    // Configuration constants
+    private static final int MAX_HISTORY_SIZE = 50;
+    private static final double BASE_K = 1.2;
+    private static final double AGING_HALF_LIFE_MINUTES = 30.0;
 
-    private static final int MAX_HISTORY_SIZE = 50; // max number of saved nodes in history
-    private static final double BASE_K = 1.2; // Base constant for k^n formula
-    private static final double AGING_HALF_LIFE_MINUTES = 30.0; // Time for weight to decay by half
+    // Weight calculation constants
+    private static final double MIN_AGING_FACTOR = 0.1;
+    private static final double MIN_WEIGHT = 0.1;
+    private static final double MAX_WEIGHT = 1.0;
+    private static final double WEIGHT_RANGE = 0.9; // MAX_WEIGHT - MIN_WEIGHT
+
+    // Click boost constants
+    private static final double CLICK_BOOST_BASE = 1.0;
+    private static final double CLICK_BOOST_MULTIPLIER = 0.1;
+    private static final int MAX_CLICK_BOOST_COUNT = 5;
+
+    // Normalization constants
+    private static final double MAX_CLICK_BOOST_FACTOR = 1.5;
+    private static final double LAMBDA_DIVISOR = Math.log(2);
 
     @Override
     public void addNodeClick(String nodeId, String nodeName, double degreeOpacity) {
-
         LocalDateTime now = LocalDateTime.now();
 
-        // check if node already exists in history
+        // Check if node already exists in history
         Optional<NodeHistoryDTO> existingNode = clickHistory.stream()
                 .filter(node -> node.getNodeId().equals(nodeId))
                 .findFirst();
@@ -81,17 +91,16 @@ public class NodeHistoryImplementation implements NodeHistoryService {
     public ClickStatistics getClickStatistics() {
         return new ClickStatistics(
                 clickHistory.size(), // unique nodes
-                clickHistory.stream().mapToInt(node -> node.getClickCount()).sum(), // total clicks
-                clickHistory.stream().mapToDouble(node -> node.getWeight()).average().orElse(0.0) // average weight
+                clickHistory.stream().mapToInt(NodeHistoryDTO::getClickCount).sum(), // total clicks
+                clickHistory.stream().mapToDouble(NodeHistoryDTO::getWeight).average().orElse(0.0) // average weight
         );
     }
 
     /**
-     * Calculate weight using: k^n * degree_opacity * aging_factor
+     * Calculate weight using: k^n * degree_opacity * aging_factor * click_boost
      * where n is the position from end (last clicked = highest n)
      */
     private void recalculateWeightsAndAgingFactors() {
-
         int totalNodes = clickHistory.size();
         LocalDateTime now = LocalDateTime.now();
 
@@ -101,19 +110,19 @@ public class NodeHistoryImplementation implements NodeHistoryService {
             // Position from end: last clicked = totalNodes, first = 1
             int positionFromEnd = totalNodes - i;
 
-            // k^n component: k^4 * k^3 * k^2 * k^1 for last 4 nodes
+            // k^n component
             double kPowerN = Math.pow(BASE_K, positionFromEnd);
 
             // Aging factor: exponential decay based on time since click
             double agingFactor = calculateAgingFactor(node.getClickedAt(), now);
 
             // Click frequency boost (more clicks = higher weight)
-            double clickBoost = 1.0 + (0.1 * Math.min(node.getClickCount() - 1, 5));
+            double clickBoost = calculateClickBoost(node.getClickCount());
 
             // Final weight: k^n * degree_opacity * aging_factor * click_boost
             double rawWeight = kPowerN * node.getDegreeOpacity() * agingFactor * clickBoost;
 
-            // Normalize to [0.1, 1.0]
+            // Normalize to [MIN_WEIGHT, MAX_WEIGHT]
             double normalizedWeight = normalizeWeight(rawWeight, totalNodes);
 
             node.setWeight(normalizedWeight);
@@ -121,29 +130,36 @@ public class NodeHistoryImplementation implements NodeHistoryService {
         }
     }
 
-    /**
-     * Exponential decay: weight = e^(-λt) where λ = ln(2) / half_life
-     */
     private double calculateAgingFactor(LocalDateTime clickTime, LocalDateTime now) {
         double minutesElapsed = Duration.between(clickTime, now).toMinutes();
-        double lambda = Math.log(2) / AGING_HALF_LIFE_MINUTES;
+        double lambda = LAMBDA_DIVISOR / AGING_HALF_LIFE_MINUTES;
         double agingFactor = Math.exp(-lambda * minutesElapsed);
 
-        // Ensure minimum aging factor of 0.1
-        return Math.max(0.1, agingFactor);
+        // Ensure minimum aging factor
+        return Math.max(MIN_AGING_FACTOR, agingFactor);
     }
 
     /**
-     * Normalize weight to [0.1, 1.0] range
+     * Calculate click boost: 1.0 + (0.1 * min(clickCount - 1, 5))
      */
+    private double calculateClickBoost(int clickCount) {
+        int effectiveClicks = Math.min(clickCount - 1, MAX_CLICK_BOOST_COUNT);
+        return CLICK_BOOST_BASE + (CLICK_BOOST_MULTIPLIER * effectiveClicks);
+    }
+
+
     private double normalizeWeight(double rawWeight, int totalNodes) {
         // Find max possible weight for normalization
-        double maxPossibleWeight = Math.pow(BASE_K, totalNodes) * 1.0 * 1.0 * 1.5;
+        double maxPossibleWeight = Math.pow(BASE_K, totalNodes)
+                * MAX_WEIGHT
+                * MAX_WEIGHT
+                * MAX_CLICK_BOOST_FACTOR;
 
-        // Normalize and clamp to [0.1, 1.0]
-        double normalized = 0.1 + (0.9 * Math.min(rawWeight / maxPossibleWeight, 1.0));
-        return Math.min(1.0, Math.max(0.1, normalized));
+        // Normalize and clamp to [MIN_WEIGHT, MAX_WEIGHT]
+        double normalized = MIN_WEIGHT + (WEIGHT_RANGE * Math.min(rawWeight / maxPossibleWeight, MAX_WEIGHT));
+        return Math.min(MAX_WEIGHT, Math.max(MIN_WEIGHT, normalized));
     }
+
 
     private void updateClickOrders() {
         for (int i = 0; i < clickHistory.size(); i++) {

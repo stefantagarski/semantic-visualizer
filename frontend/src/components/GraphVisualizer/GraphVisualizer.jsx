@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ControlPanel from './control-panel/ControlPanel';
 import NodeDetailsPanel from './node-details-panel/NodeDetailsPanel';
-import ClickPathBar from './node-history/ClickPathBar';
+import NodeHistoryPanel from '../NodeHistory/NodeHistoryPanel';
+import OntologyService from '../../services/OntologyService';
 import { useGraphMetrics, useGraphVisualization, useNodeSelection } from './hooks';
-
 
 const GraphVisualizer = ({
                              graphData,
@@ -24,31 +24,11 @@ const GraphVisualizer = ({
     const [showImportanceIndicator, setShowImportanceIndicator] = useState(false);
     const [selectedRelationships, setSelectedRelationships] = useState(new Set());
     const [showControlPanel, setShowControlPanel] = useState(false);
+    const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+    const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
 
     // Calculate graph metrics
     const graphMetrics = useGraphMetrics(graphData);
-
-    const handleNodeClick = async (nodeId, nodeName, degreeOpacity) => {
-        try {
-            const response = await fetch(
-                `http://localhost:8080/api/ontology/node-click?nodeId=${encodeURIComponent(nodeId)}&nodeName=${encodeURIComponent(nodeName)}&degreeOpacity=${degreeOpacity}`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-
-            if (!response.ok) {
-                console.error('Failed to record node click:', response.status);
-            } else {
-                console.log('Node click recorded:', nodeId, nodeName, degreeOpacity);
-            }
-        } catch (error) {
-            console.error('Error recording node click:', error);
-        }
-    };
 
     // Initialize selected relationships
     useEffect(() => {
@@ -69,8 +49,7 @@ const GraphVisualizer = ({
         originalOntologyData,
         formatType,
         onNodeSelect,
-        graphMetrics,
-        handleNodeClick
+        graphMetrics
     });
 
     // Handle external node selection
@@ -84,28 +63,53 @@ const GraphVisualizer = ({
         formatType
     });
 
+    // Record node clicks to history and trigger auto-refresh
+    useEffect(() => {
+        if (selectedNode && graphMetrics.nodeDegrees && graphData) {
+            const recordClick = async () => {
+                try {
+                    const degree = graphMetrics.nodeDegrees[selectedNode] || 0;
+                    const maxDegree = graphMetrics.maxDegree || 1;
+                    const degreeOpacity = degree / maxDegree;
+
+                    const node = graphData.nodes.find(n => n.id === selectedNode);
+                    const nodeLabel = node?.label || selectedNode;
+
+                    await OntologyService.recordNodeClick(
+                        selectedNode,
+                        nodeLabel,
+                        parseFloat(degreeOpacity.toFixed(2))
+                    );
+
+                    console.log('✅ Node click recorded:', selectedNode, nodeLabel);
+
+                    // Trigger history panel refresh
+                    setHistoryRefreshTrigger(prev => prev + 1);
+
+                } catch (error) {
+                    console.error('❌ Error recording node click:', error);
+                }
+            };
+
+            recordClick();
+        }
+    }, [selectedNode, graphMetrics, graphData]);
+
     // Handle highlighting and filtering
     useEffect(() => {
         if (!d3Refs.current.node || !graphData) return;
 
         const { node, link, nodeLabel, linkLabel, links } = d3Refs.current;
 
-        // Apply relationship filtering
         link.style("display", d => selectedRelationships.has(d.label) ? null : "none");
         linkLabel.style("display", d => selectedRelationships.has(d.label) ? null : "none");
 
-        // TODO: we will change this when we are going to implement weighted knowlegde graphs
-        // Importance indicator based on node degree
         const getNodeOpacity = (nodeId) => {
             if (!showImportanceIndicator) return 1;
-
             const degree = graphMetrics.nodeDegrees[nodeId] || 0;
             const normalized = degree / graphMetrics.maxDegree;
-
-            // Map to opacity range: 0.3 (low degree) to 1.0 (high degree)
             return 0.3 + (normalized * 0.7);
         };
-
 
         if (showImportanceIndicator && !selectedNode) {
             node.attr("fill-opacity", d => getNodeOpacity(d.id));
@@ -114,7 +118,6 @@ const GraphVisualizer = ({
 
         if (!selectedNode) return;
 
-        // Apply selection highlighting
         applySelectionHighlighting({
             node,
             link,
@@ -148,6 +151,10 @@ const GraphVisualizer = ({
         }
     };
 
+    const handleHistoryNodeClick = (nodeId) => {
+        setSelectedNode(nodeId);
+    };
+
     return (
         <div className="graph-container" style={{ width: '100%', height: '100%', position: 'relative' }}>
             <ControlPanel
@@ -164,6 +171,15 @@ const GraphVisualizer = ({
                 selectedRelationships={selectedRelationships}
                 onToggleRelationship={toggleRelationship}
                 onToggleAllRelationships={toggleAllRelationships}
+                showHistoryPanel={showHistoryPanel}
+                onToggleHistoryPanel={() => setShowHistoryPanel(!showHistoryPanel)}
+            />
+
+            <NodeHistoryPanel
+                isVisible={showHistoryPanel}
+                onToggleVisibility={() => setShowHistoryPanel(!showHistoryPanel)}
+                onNodeClick={handleHistoryNodeClick}
+                refreshTrigger={historyRefreshTrigger}
             />
 
             <svg ref={svgRef} width="100%" height="100%" />
@@ -181,13 +197,6 @@ const GraphVisualizer = ({
                     }}
                 />
             )}
-
-            <ClickPathBar
-                onNodeSelect={(nodeId) => {
-                    setSelectedNode(nodeId);
-                }}
-            />
-
         </div>
     );
 };
@@ -197,7 +206,6 @@ const applySelectionHighlighting = ({
                                         node, link, nodeLabel, linkLabel, links,
                                         selectedNode, fadeUnrelated, focusDepth, graphMetrics, getNodeOpacity
                                     }) => {
-    // Reset all elements
     node.attr("fill", "#6b93c3")
         .attr("r", 8)
         .attr("stroke", "#fff")
@@ -216,7 +224,6 @@ const applySelectionHighlighting = ({
     linkLabel.attr("opacity", 0.6)
         .attr("font-weight", "normal");
 
-    // Highlight selected node
     node.filter(d => d.id === selectedNode)
         .attr("fill", "#4a6fa5")
         .attr("r", 12)
@@ -230,7 +237,6 @@ const applySelectionHighlighting = ({
         .attr("fill", "#2c4870")
         .attr("opacity", 1);
 
-    // Find connected nodes
     const connectedNodeIds = new Set();
     links.forEach(l => {
         const sourceId = l.source.id || l.source;
@@ -239,12 +245,10 @@ const applySelectionHighlighting = ({
         if (targetId === selectedNode) connectedNodeIds.add(sourceId);
     });
 
-    // Get focused nodes if focus mode enabled
     const focusedNodes = focusDepth !== null
         ? getNodesWithinDepth(selectedNode, focusDepth, links)
         : null;
 
-    // Highlight connected elements
     link.filter(l => {
         const sourceId = l.source.id || l.source;
         const targetId = l.target.id || l.target;
@@ -273,7 +277,6 @@ const applySelectionHighlighting = ({
         .attr("opacity", 1)
         .attr("font-weight", "bold");
 
-    // Apply fading
     if (fadeUnrelated || focusedNodes !== null) {
         let nodesToFade;
         if (focusedNodes !== null) {
@@ -302,7 +305,6 @@ const applySelectionHighlighting = ({
     }
 };
 
-// BFS to find all nodes within N hops from the selected node
 const getNodesWithinDepth = (startNodeId, depth, links) => {
     if (depth === null) return null;
 
