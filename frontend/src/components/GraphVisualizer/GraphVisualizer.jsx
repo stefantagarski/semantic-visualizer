@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ControlPanel from './control-panel/ControlPanel';
 import NodeDetailsPanel from './node-details-panel/NodeDetailsPanel';
+import ClickPathBar from './node-history/ClickPathBar';
 import { useGraphMetrics, useGraphVisualization, useNodeSelection } from './hooks';
 
 
@@ -27,6 +28,28 @@ const GraphVisualizer = ({
     // Calculate graph metrics
     const graphMetrics = useGraphMetrics(graphData);
 
+    const handleNodeClick = async (nodeId, nodeName, degreeOpacity) => {
+        try {
+            const response = await fetch(
+                `http://localhost:8080/api/ontology/node-click?nodeId=${encodeURIComponent(nodeId)}&nodeName=${encodeURIComponent(nodeName)}&degreeOpacity=${degreeOpacity}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                console.error('Failed to record node click:', response.status);
+            } else {
+                console.log('Node click recorded:', nodeId, nodeName, degreeOpacity);
+            }
+        } catch (error) {
+            console.error('Error recording node click:', error);
+        }
+    };
+
     // Initialize selected relationships
     useEffect(() => {
         if (graphMetrics.relationshipTypes.length > 0 && selectedRelationships.size === 0) {
@@ -46,7 +69,8 @@ const GraphVisualizer = ({
         originalOntologyData,
         formatType,
         onNodeSelect,
-        graphMetrics
+        graphMetrics,
+        handleNodeClick
     });
 
     // Handle external node selection
@@ -157,6 +181,13 @@ const GraphVisualizer = ({
                     }}
                 />
             )}
+
+            <ClickPathBar
+                onNodeSelect={(nodeId) => {
+                    setSelectedNode(nodeId);
+                }}
+            />
+
         </div>
     );
 };

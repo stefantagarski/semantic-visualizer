@@ -15,7 +15,8 @@ export const useGraphVisualization = ({
                                           originalOntologyData,
                                           formatType,
                                           onNodeSelect,
-                                          graphMetrics
+                                          graphMetrics,
+                                          handleNodeClick
                                       }) => {
     useEffect(() => {
         if (!graphData) return;
@@ -146,8 +147,8 @@ export const useGraphVisualization = ({
                 d.fy = null;
             }));
 
-        // Node click handler
-        const handleNodeClick = (nodeId) => {
+        // Node click handler - FIXED VERSION
+        const handleInternalNodeClick = async (nodeId) => {
             resetAllStyles(node, link, nodeLabel, linkLabel, getNodeOpacity);
 
             if (!nodeId) {
@@ -155,6 +156,24 @@ export const useGraphVisualization = ({
                 setNodeDetails(null);
                 if (onNodeSelect) onNodeSelect(null);
                 return;
+            }
+
+            // Find the node data to get its label and degree
+            const nodeData = nodes.find(n => n.id === nodeId);
+            const nodeName = nodeData ? nodeData.label : nodeId;
+
+            // Calculate degree opacity (normalized degree value)
+            const degree = graphMetrics.nodeDegrees[nodeId] || 0;
+            const degreeOpacity = graphMetrics.maxDegree > 0 ? degree / graphMetrics.maxDegree : 0;
+
+            // Call the external handleNodeClick to track the click - AWAIT IT
+            if (handleNodeClick) {
+                try {
+                    await handleNodeClick(nodeId, nodeName, degreeOpacity);
+                    console.log(' Node click tracked successfully:', nodeId);
+                } catch (error) {
+                    console.error(' Error tracking node click:', error);
+                }
             }
 
             setSelectedNode(nodeId);
@@ -180,15 +199,36 @@ export const useGraphVisualization = ({
 
         // Reset graph handler
         const resetGraph = () => {
-            handleNodeClick(null);
+            handleInternalNodeClick(null);
             resetAllStyles(node, link, nodeLabel, linkLabel, getNodeOpacity);
             svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
         };
 
-        // Event listeners
-        node.on("click", (event, d) => {
+        // Event listeners - FIXED VERSION
+        node.on("click", async (event, d) => {
             event.stopPropagation();
-            selectedNode === d.id ? handleNodeClick(null) : handleNodeClick(d.id);
+
+            // Calculate degree opacity
+            const degree = graphMetrics.nodeDegrees[d.id] || 0;
+            const degreeOpacity = graphMetrics.maxDegree > 0 ? degree / graphMetrics.maxDegree : 0;
+            const nodeName = d.label || d.id;
+
+            // Always record the click for navigation path tracking - AWAIT IT
+            if (handleNodeClick) {
+                try {
+                    await handleNodeClick(d.id, nodeName, degreeOpacity);
+                    console.log('✅ Click recorded for:', d.id, 'weight:', degreeOpacity.toFixed(2));
+                } catch (error) {
+                    console.error('❌ Failed to record click:', error);
+                }
+            }
+
+            // Toggle or select the node
+            if (selectedNode === d.id) {
+                await handleInternalNodeClick(null);
+            } else {
+                await handleInternalNodeClick(d.id);
+            }
         });
 
         svg.on("click", event => {
@@ -201,7 +241,7 @@ export const useGraphVisualization = ({
 
         // Apply initial selection if exists
         if (selectedNode) {
-            handleNodeClick(selectedNode);
+            handleInternalNodeClick(selectedNode);
         }
 
         // Simulation tick
@@ -225,7 +265,7 @@ export const useGraphVisualization = ({
                 .attr("y", d => d.y + 4);
         });
 
-    }, [graphData, originalOntologyData, formatType]);
+    }, [graphData, originalOntologyData, formatType, handleNodeClick, graphMetrics]);
 };
 
 // Helper function to create grid
