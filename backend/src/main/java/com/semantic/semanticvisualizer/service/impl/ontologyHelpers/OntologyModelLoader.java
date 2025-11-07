@@ -14,6 +14,17 @@ import java.nio.charset.StandardCharsets;
 @Component
 public class OntologyModelLoader {
 
+    private static final String FORMAT_RDFXML = "rdfxml";
+    private static final String FORMAT_RDFXML_ALT = "rdf/xml";
+    private static final String FORMAT_JSONLD = "jsonld";
+    private static final String FORMAT_JSONLD_ALT = "json-ld";
+    private static final String FORMAT_NTRIPLES = "ntriples";
+    private static final String FORMAT_NTRIPLES_ALT = "n-triples";
+    private static final String FORMAT_NTRIPLES_SHORT = "nt";
+    private static final String FORMAT_TRIG = "trig";
+    private static final String FORMAT_TURTLE = "turtle";
+    private static final String FORMAT_TURTLE_SHORT = "ttl";
+
     public Model loadModel(String ontologyContent, String format) {
         if (ontologyContent == null || ontologyContent.isEmpty()) {
             throw new IllegalArgumentException("Ontology content cannot be empty");
@@ -40,20 +51,15 @@ public class OntologyModelLoader {
 
         String normalizedFormat = format.toLowerCase().trim();
 
-        if (normalizedFormat.equals("rdfxml") || normalizedFormat.equals("rdf/xml")) {
-            return Lang.RDFXML.getName();
-        } else if (normalizedFormat.equals("jsonld") || normalizedFormat.equals("json-ld")) {
-            return Lang.JSONLD.getName();
-        } else if (normalizedFormat.equals("ntriples") || normalizedFormat.equals("n-triples")
-                || normalizedFormat.equals("nt")) {
-            return Lang.NTRIPLES.getName();
-        } else if (normalizedFormat.equals("trig")) {
-            return Lang.TRIG.getName();
-        } else if (normalizedFormat.equals("turtle") || normalizedFormat.equals("ttl")) {
-            return Lang.TURTLE.getName();
-        } else {
-            throw new IllegalArgumentException("Unsupported format: " + format + ". Supported formats: turtle, rdfxml, jsonld, ntriples, trig, nquads");
-        }
+        return switch (normalizedFormat) {
+            case FORMAT_RDFXML, FORMAT_RDFXML_ALT -> Lang.RDFXML.getName();
+            case FORMAT_JSONLD, FORMAT_JSONLD_ALT -> Lang.JSONLD.getName();
+            case FORMAT_NTRIPLES, FORMAT_NTRIPLES_ALT, FORMAT_NTRIPLES_SHORT -> Lang.NTRIPLES.getName();
+            case FORMAT_TRIG -> Lang.TRIG.getName();
+            case FORMAT_TURTLE, FORMAT_TURTLE_SHORT -> Lang.TURTLE.getName();
+            default ->
+                    throw new IllegalArgumentException("Unsupported format: " + format + ". Supported formats: turtle, rdfxml, jsonld, ntriples, trig");
+        };
     }
 
     public Model loadModelFromFile(MultipartFile file, String format) throws IOException {

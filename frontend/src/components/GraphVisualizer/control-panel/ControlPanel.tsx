@@ -1,6 +1,5 @@
-import React from 'react';
-
-{/* Controls and settings panel for graph visualization interface. */}
+import * as React from 'react';
+// Controls and settings panel for graph visualization interface.
 
 const ControlPanel = ({
                           show,
@@ -15,7 +14,9 @@ const ControlPanel = ({
                           relationshipTypes,
                           selectedRelationships,
                           onToggleRelationship,
-                          onToggleAllRelationships
+                          onToggleAllRelationships,
+                          showHistoryPanel,
+                          onToggleHistoryPanel
                       }) => {
     return (
         <>
@@ -93,6 +94,12 @@ const ControlPanel = ({
                         label="Show Node Importance"
                         checked={showImportanceIndicator}
                         onChange={onShowImportanceChange}
+                    />
+
+                    <CheckboxOption
+                        label="Show Node History"
+                        checked={showHistoryPanel}
+                        onChange={onToggleHistoryPanel}
                     />
 
                     <FocusModeSelector

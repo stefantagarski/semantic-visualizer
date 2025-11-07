@@ -26,13 +26,6 @@ export const useGraphVisualization = ({
         const svg = d3.select(svgRef.current);
         svg.selectAll("*").remove();
 
-        // Create background
-        const background = svg.append("rect")
-            .attr("width", "100%")
-            .attr("height", "100%")
-            .attr("fill", "#f9fafc")
-            .attr("class", "background-rect");
-
         const container = svg.append("g")
             .attr("class", "graph-container");
 
@@ -146,8 +139,8 @@ export const useGraphVisualization = ({
                 d.fy = null;
             }));
 
-        // Node click handler
-        const handleNodeClick = (nodeId) => {
+        // Node click handler - FIXED VERSION
+        const handleInternalNodeClick = async (nodeId) => {
             resetAllStyles(node, link, nodeLabel, linkLabel, getNodeOpacity);
 
             if (!nodeId) {
@@ -180,15 +173,21 @@ export const useGraphVisualization = ({
 
         // Reset graph handler
         const resetGraph = () => {
-            handleNodeClick(null);
+            handleInternalNodeClick(null);
             resetAllStyles(node, link, nodeLabel, linkLabel, getNodeOpacity);
             svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
         };
 
-        // Event listeners
-        node.on("click", (event, d) => {
+        // Event listeners - FIXED VERSION
+        node.on("click", async (event, d) => {
             event.stopPropagation();
-            selectedNode === d.id ? handleNodeClick(null) : handleNodeClick(d.id);
+
+            // Toggle or select the node
+            if (selectedNode === d.id) {
+                await handleInternalNodeClick(null);
+            } else {
+                await handleInternalNodeClick(d.id);
+            }
         });
 
         svg.on("click", event => {
@@ -201,7 +200,7 @@ export const useGraphVisualization = ({
 
         // Apply initial selection if exists
         if (selectedNode) {
-            handleNodeClick(selectedNode);
+            handleInternalNodeClick(selectedNode);
         }
 
         // Simulation tick
@@ -225,7 +224,7 @@ export const useGraphVisualization = ({
                 .attr("y", d => d.y + 4);
         });
 
-    }, [graphData, originalOntologyData, formatType]);
+    }, [graphData, originalOntologyData, formatType, graphMetrics]);
 };
 
 // Helper function to create grid
@@ -267,7 +266,7 @@ const resetAllStyles = (node, link, nodeLabel, linkLabel, getNodeOpacity) => {
 };
 
 // Helper function to apply node highlighting
-const applyNodeHighlighting = (node, link, nodeLabel, linkLabel, links, nodeId, getNodeOpacity) => {
+const applyNodeHighlighting = (node, link, nodeLabel, linkLabel, links, nodeId) => {
     // Highlight selected node
     node.filter(d => d.id === nodeId)
         .attr("fill", "#4a6fa5")

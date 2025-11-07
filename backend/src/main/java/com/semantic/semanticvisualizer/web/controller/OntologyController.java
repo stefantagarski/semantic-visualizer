@@ -3,6 +3,7 @@ package com.semantic.semanticvisualizer.web.controller;
 import com.semantic.semanticvisualizer.model.NodeDetailsDTO;
 import com.semantic.semanticvisualizer.model.OntologyGraphDTO;
 import com.semantic.semanticvisualizer.model.OntologyStatsDTO;
+import com.semantic.semanticvisualizer.service.NodeHistoryService;
 import com.semantic.semanticvisualizer.service.OntologyService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,13 +16,15 @@ import java.util.Objects;
 
 @Controller
 @RequestMapping("/api/ontology")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"}) // Allow CORS for development frontends
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
 public class OntologyController {
 
     private final OntologyService ontologyService;
+    private final NodeHistoryService nodeHistoryService;
 
-    public OntologyController(OntologyService ontologyService) {
+    public OntologyController(OntologyService ontologyService, NodeHistoryService nodeHistoryService) {
         this.ontologyService = ontologyService;
+        this.nodeHistoryService = nodeHistoryService;
     }
 
     /**
@@ -111,6 +114,53 @@ public class OntologyController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/node-click")
+    public ResponseEntity<?> recordNodeClick(
+            @RequestParam String nodeId,
+            @RequestParam String nodeName,
+            @RequestParam(defaultValue = "0.5") double degreeOpacity) {
+        try {
+            nodeHistoryService.addNodeClick(nodeId, nodeName, degreeOpacity);
+            return ResponseEntity.ok("Node click recorded");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error recording node click: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/click-statistics")
+    public ResponseEntity<?> getClickStatistics() {
+        try {
+            var stats = nodeHistoryService.getClickStatistics();
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error retrieving statistics: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/click-history")
+    public ResponseEntity<?> getClickHistory() {
+        try {
+            var history = nodeHistoryService.getClickHistory();
+            return ResponseEntity.ok(history);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error retrieving history: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/clear-history")
+    public ResponseEntity<?> clearClickHistory() {
+        try {
+            nodeHistoryService.clearHistory();
+            return ResponseEntity.ok("History cleared");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error clearing history: " + e.getMessage());
         }
     }
 }
