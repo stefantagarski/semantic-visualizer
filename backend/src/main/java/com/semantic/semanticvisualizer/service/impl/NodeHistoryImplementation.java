@@ -10,11 +10,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
 public class NodeHistoryImplementation implements NodeHistoryService {
 
-    private final List<NodeHistoryDTO> clickHistory = new ArrayList<>();
+    private final List<NodeHistoryDTO> clickHistory = new CopyOnWriteArrayList<>(); // thread-safe list
 
     // Configuration constants
     private static final int MAX_HISTORY_SIZE = 50;

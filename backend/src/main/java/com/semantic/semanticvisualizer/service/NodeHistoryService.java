@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface NodeHistoryService
 {
-    public void addNodeClick(String nodeId, String nodeName, double degreeOpacity);
+    void addNodeClick(String nodeId, String nodeName, double degreeOpacity);
     List<NodeHistoryDTO> getClickHistory();
     void clearHistory();
     ClickStatistics getClickStatistics();

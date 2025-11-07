@@ -58,7 +58,7 @@ public class OntologyModelLoader {
             case FORMAT_TRIG -> Lang.TRIG.getName();
             case FORMAT_TURTLE, FORMAT_TURTLE_SHORT -> Lang.TURTLE.getName();
             default ->
-                    throw new IllegalArgumentException("Unsupported format: " + format + ". Supported formats: turtle, rdfxml, jsonld, ntriples, trig, nquads");
+                    throw new IllegalArgumentException("Unsupported format: " + format + ". Supported formats: turtle, rdfxml, jsonld, ntriples, trig");
         };
     }
 

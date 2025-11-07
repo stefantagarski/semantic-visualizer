@@ -15,8 +15,7 @@ export const useGraphVisualization = ({
                                           originalOntologyData,
                                           formatType,
                                           onNodeSelect,
-                                          graphMetrics,
-                                          handleNodeClick
+                                          graphMetrics
                                       }) => {
     useEffect(() => {
         if (!graphData) return;
@@ -26,13 +25,6 @@ export const useGraphVisualization = ({
 
         const svg = d3.select(svgRef.current);
         svg.selectAll("*").remove();
-
-        // Create background
-        const background = svg.append("rect")
-            .attr("width", "100%")
-            .attr("height", "100%")
-            .attr("fill", "#f9fafc")
-            .attr("class", "background-rect");
 
         const container = svg.append("g")
             .attr("class", "graph-container");
@@ -158,24 +150,6 @@ export const useGraphVisualization = ({
                 return;
             }
 
-            // Find the node data to get its label and degree
-            const nodeData = nodes.find(n => n.id === nodeId);
-            const nodeName = nodeData ? nodeData.label : nodeId;
-
-            // Calculate degree opacity (normalized degree value)
-            const degree = graphMetrics.nodeDegrees[nodeId] || 0;
-            const degreeOpacity = graphMetrics.maxDegree > 0 ? degree / graphMetrics.maxDegree : 0;
-
-            // Call the external handleNodeClick to track the click - AWAIT IT
-            if (handleNodeClick) {
-                try {
-                    await handleNodeClick(nodeId, nodeName, degreeOpacity);
-                    console.log(' Node click tracked successfully:', nodeId);
-                } catch (error) {
-                    console.error(' Error tracking node click:', error);
-                }
-            }
-
             setSelectedNode(nodeId);
             if (onNodeSelect) onNodeSelect(nodeId);
 
@@ -207,21 +181,6 @@ export const useGraphVisualization = ({
         // Event listeners - FIXED VERSION
         node.on("click", async (event, d) => {
             event.stopPropagation();
-
-            // Calculate degree opacity
-            const degree = graphMetrics.nodeDegrees[d.id] || 0;
-            const degreeOpacity = graphMetrics.maxDegree > 0 ? degree / graphMetrics.maxDegree : 0;
-            const nodeName = d.label || d.id;
-
-            // Always record the click for navigation path tracking - AWAIT IT
-            if (handleNodeClick) {
-                try {
-                    await handleNodeClick(d.id, nodeName, degreeOpacity);
-                    console.log('✅ Click recorded for:', d.id, 'weight:', degreeOpacity.toFixed(2));
-                } catch (error) {
-                    console.error('❌ Failed to record click:', error);
-                }
-            }
 
             // Toggle or select the node
             if (selectedNode === d.id) {
@@ -265,7 +224,7 @@ export const useGraphVisualization = ({
                 .attr("y", d => d.y + 4);
         });
 
-    }, [graphData, originalOntologyData, formatType, handleNodeClick, graphMetrics]);
+    }, [graphData, originalOntologyData, formatType, graphMetrics]);
 };
 
 // Helper function to create grid
@@ -307,7 +266,7 @@ const resetAllStyles = (node, link, nodeLabel, linkLabel, getNodeOpacity) => {
 };
 
 // Helper function to apply node highlighting
-const applyNodeHighlighting = (node, link, nodeLabel, linkLabel, links, nodeId, getNodeOpacity) => {
+const applyNodeHighlighting = (node, link, nodeLabel, linkLabel, links, nodeId) => {
     // Highlight selected node
     node.filter(d => d.id === nodeId)
         .attr("fill", "#4a6fa5")

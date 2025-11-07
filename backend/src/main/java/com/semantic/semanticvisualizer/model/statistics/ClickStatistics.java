@@ -5,9 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
-@AllArgsConstructor(access = AccessLevel.PUBLIC)
+@AllArgsConstructor
 public class ClickStatistics {
-    public int uniqueNodes;
-    public int totalClicks;
-    public double averageWeight;
+    private int uniqueNodes;
+    private int totalClicks;
+    private double averageWeight;
 }

@@ -1,5 +1,5 @@
 import * as React from 'react';
-{/* Controls and settings panel for graph visualization interface. */}
+// Controls and settings panel for graph visualization interface.
 
 const ControlPanel = ({
                           show,

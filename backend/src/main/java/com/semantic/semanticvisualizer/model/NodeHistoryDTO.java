@@ -27,10 +27,6 @@ public class NodeHistoryDTO {
         this.clickCount = 1;
     }
 
-    public double getDegreeOpacity(){
-        return Math.min(1.0, this.weight);
-    }
-
     public void incrementClickCount() {
         this.clickCount++;
     }

@@ -73,7 +73,7 @@ const GraphVisualizer = ({
                 setNodeDetails(null);
                 setShowHistoryPanel(false);
                 setHistoryRefreshTrigger(0);
-            } catch(error) {
+            } catch (error) {
                 console.error('Error clearing history on graph change:', error);
             }
         };
@@ -172,7 +172,34 @@ const GraphVisualizer = ({
     };
 
     const handleHistoryNodeClick = (nodeId) => {
+        // Find the node in the graph
+        const nodeData = graphData.nodes.find(n => n.id === nodeId);
+        if (!nodeData) {
+            console.error('Node not found in graph:', nodeId);
+            return;
+        }
+
+        // Set the selected node (this triggers the useEffect in useNodeSelection hook)
         setSelectedNode(nodeId);
+
+        // Fetch node details
+        if (originalOntologyData) {
+            setIsLoadingDetails(true);
+            OntologyService.getNodeDetails(nodeId, originalOntologyData, formatType)
+                .then(details => {
+                    setNodeDetails(details);
+                    setIsLoadingDetails(false);
+                })
+                .catch (error => {
+                    console.error("Error fetching node details:", error);
+                    setIsLoadingDetails(false);
+                });
+        }
+
+        // Call external handler
+        if (onNodeSelect) {
+            onNodeSelect(nodeId);
+        }
     };
 
     return (
@@ -224,7 +251,7 @@ const GraphVisualizer = ({
 // Helper function for selection highlighting
 const applySelectionHighlighting = ({
                                         node, link, nodeLabel, linkLabel, links,
-                                        selectedNode, fadeUnrelated, focusDepth, graphMetrics, getNodeOpacity
+                                        selectedNode, fadeUnrelated, focusDepth, getNodeOpacity
                                     }) => {
     node.attr("fill", "#6b93c3")
         .attr("r", 8)

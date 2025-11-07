@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import OntologyService from '../../services/OntologyService';
 import './NodeHistoryPanel.css';
 
@@ -11,20 +11,18 @@ const NodeHistoryPanel = ({ onNodeClick, isVisible, onToggleVisibility, refreshT
     // Fetch data when panel becomes visible
     useEffect(() => {
         if (isVisible) {
-            fetchData();
+            fetchHistory();
+            fetchStatistics();
         }
     }, [isVisible]);
 
     // Fetch data when refresh is triggered from parent (node click)
     useEffect(() => {
         if (refreshTrigger > 0 && isVisible) {
-            fetchData();
+            fetchHistory();
+            fetchStatistics();
         }
     }, [refreshTrigger, isVisible]);
-
-    const fetchData = async () => {
-        await Promise.all([fetchHistory(), fetchStatistics()]);
-    };
 
     const fetchHistory = async () => {
         setLoading(true);
@@ -64,6 +62,12 @@ const NodeHistoryPanel = ({ onNodeClick, isVisible, onToggleVisibility, refreshT
         }
     };
 
+    // useEffect(() => {
+    //     if (!isVisible) return;
+    //     // triggers on panel open and any refreshTrigger change
+    //     fetchData();
+    // }, [isVisible, refreshTrigger, fetchData]);
+
     const getWeightColor = (weight, agingFactor) => {
         // Use hue transition: red (0) -> orange (30) -> yellow (60) -> green (120)
         // Fresh nodes are green, old nodes are red
@@ -81,10 +85,10 @@ const NodeHistoryPanel = ({ onNodeClick, isVisible, onToggleVisibility, refreshT
     };
 
     const getAgingIndicator = (agingFactor) => {
-        if (agingFactor > 0.8) return { label: 'Fresh', color: '#10b981' };
-        if (agingFactor > 0.5) return {  label: 'Recent', color: '#f59e0b' };
-        if (agingFactor > 0.2) return {  label: 'Aging', color: '#f97316' };
-        return { emoji: '●', label: 'Old', color: '#ef4444' };
+        if (agingFactor > 0.8) return { color: '#22c55e', label: 'Fresh' };
+        if (agingFactor > 0.5) return { color: '#eab308', label: 'Recent' };
+        if (agingFactor > 0.2) return { color: '#f97316', label: 'Aging' };
+        return { color: '#ef4444', label: 'Old' };
     };
 
     const formatTimeDifference = (timestamp) => {
@@ -129,7 +133,7 @@ const NodeHistoryPanel = ({ onNodeClick, isVisible, onToggleVisibility, refreshT
                         <div className="stat-label">Total Clicks</div>
                     </div>
                     <div className="stat-card">
-                        <div className="stat-value">{statistics.averageWeight.toFixed(2)}</div>
+                        <div className="stat-value">{(statistics.averageWeight ?? 0).toFixed(3)}</div>
                         <div className="stat-label">Avg Weight</div>
                     </div>
                 </div>
@@ -138,7 +142,7 @@ const NodeHistoryPanel = ({ onNodeClick, isVisible, onToggleVisibility, refreshT
             <div className="history-actions">
                 <button
                     className="refresh-btn"
-                    onClick={fetchData}
+                    onClick={() => { fetchHistory(); fetchStatistics(); }}
                     disabled={loading}
                 >
                     Refresh
