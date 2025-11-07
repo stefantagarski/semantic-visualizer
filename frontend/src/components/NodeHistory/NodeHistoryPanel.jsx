@@ -64,18 +64,27 @@ const NodeHistoryPanel = ({ onNodeClick, isVisible, onToggleVisibility, refreshT
         }
     };
 
-    const getWeightColor = (weight) => {
-        const hue = 210;
-        const saturation = 70;
-        const lightness = 85 - (weight * 50);
+    const getWeightColor = (weight, agingFactor) => {
+        // Use hue transition: red (0) -> orange (30) -> yellow (60) -> green (120)
+        // Fresh nodes are green, old nodes are red
+        const hue = agingFactor * 120; // 0 (red) to 120 (green)
+        const saturation = 50 + (weight * 30);
+        const lightness = 85 - (weight * 25);
         return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
     };
 
+    const getBorderColor = (agingFactor) => {
+        if (agingFactor > 0.8) return '#10b981'; // green
+        if (agingFactor > 0.5) return '#f59e0b'; // amber
+        if (agingFactor > 0.2) return '#f97316'; // orange
+        return '#ef4444'; // red
+    };
+
     const getAgingIndicator = (agingFactor) => {
-        if (agingFactor > 0.8) return '🟢';
-        if (agingFactor > 0.5) return '🟡';
-        if (agingFactor > 0.2) return '🟠';
-        return '🔴';
+        if (agingFactor > 0.8) return { label: 'Fresh', color: '#10b981' };
+        if (agingFactor > 0.5) return {  label: 'Recent', color: '#f59e0b' };
+        if (agingFactor > 0.2) return {  label: 'Aging', color: '#f97316' };
+        return { emoji: '●', label: 'Old', color: '#ef4444' };
     };
 
     const formatTimeDifference = (timestamp) => {
@@ -112,16 +121,16 @@ const NodeHistoryPanel = ({ onNodeClick, isVisible, onToggleVisibility, refreshT
             {statistics && (
                 <div className="statistics-section">
                     <div className="stat-card">
-                        <div className="stat-label">Unique Nodes</div>
                         <div className="stat-value">{statistics.uniqueNodes}</div>
+                        <div className="stat-label">Unique Nodes</div>
                     </div>
                     <div className="stat-card">
-                        <div className="stat-label">Total Clicks</div>
                         <div className="stat-value">{statistics.totalClicks}</div>
+                        <div className="stat-label">Total Clicks</div>
                     </div>
                     <div className="stat-card">
+                        <div className="stat-value">{statistics.averageWeight.toFixed(2)}</div>
                         <div className="stat-label">Avg Weight</div>
-                        <div className="stat-value">{statistics.averageWeight.toFixed(3)}</div>
                     </div>
                 </div>
             )}
@@ -132,14 +141,14 @@ const NodeHistoryPanel = ({ onNodeClick, isVisible, onToggleVisibility, refreshT
                     onClick={fetchData}
                     disabled={loading}
                 >
-                    🔄 Refresh
+                    Refresh
                 </button>
                 <button
                     className="clear-btn"
                     onClick={clearHistory}
                     disabled={history.length === 0}
                 >
-                    🗑️ Clear History
+                    Clear History
                 </button>
             </div>
 
@@ -155,47 +164,70 @@ const NodeHistoryPanel = ({ onNodeClick, isVisible, onToggleVisibility, refreshT
                             <small>Click on nodes in the graph to build your history</small>
                         </div>
                     ) : (
-                        history.map((node, index) => (
-                            <div
-                                key={`${node.nodeId}-${index}`}
-                                className="history-item"
-                                style={{
-                                    backgroundColor: getWeightColor(node.weight),
-                                    borderLeft: `4px solid ${node.weight > 0.7 ? '#2c5aa0' : '#78a2d8'}`
-                                }}
-                                onClick={() => onNodeClick(node.nodeId)}
-                                title={`Click to select this node`}
-                            >
-                                <div className="item-header">
-                                    <span className="aging-indicator" title={`Aging Factor: ${node.agingFactor.toFixed(2)}`}>
-                                        {getAgingIndicator(node.agingFactor)}
-                                    </span>
-                                    <span className="node-name">{node.nodeName}</span>
-                                    <span className="click-order">#{node.clickOrder}</span>
-                                </div>
+                        history.map((node, index) => {
+                            const agingInfo = getAgingIndicator(node.agingFactor);
+                            return (
+                                <div
+                                    key={`${node.nodeId}-${index}`}
+                                    className="history-item"
+                                    style={{
+                                        backgroundColor: getWeightColor(node.weight, node.agingFactor),
+                                        borderLeft: `4px solid ${getBorderColor(node.agingFactor)}`
+                                    }}
+                                    onClick={() => onNodeClick(node.nodeId)}
+                                    title={`Click to select ${node.nodeName}`}
+                                >
+                                    <div className="item-header">
+                                        <div className="node-info">
+                                            <span className="node-name">{node.nodeName}</span>
+                                            <span className="click-order">#{node.clickOrder}</span>
+                                        </div>
+                                        <div className="aging-badge" style={{
+                                            backgroundColor: `${agingInfo.color}20`,
+                                            color: agingInfo.color,
+                                            border: `1px solid ${agingInfo.color}40`
+                                        }}>
+                                            <span className="aging-dot" style={{ color: agingInfo.color }}>
+                                                {agingInfo.emoji}
+                                            </span>
+                                            <span className="aging-label">{agingInfo.label}</span>
+                                        </div>
+                                    </div>
 
-                                <div className="item-stats">
-                                    <span className="stat" title="Weight">
-                                        ⚖️ {node.weight.toFixed(3)}
-                                    </span>
-                                    <span className="stat" title="Click Count">
-                                        👆 {node.clickCount}
-                                    </span>
-                                    <span className="stat" title="Degree Opacity">
-                                        🎯 {node.degreeOpacity.toFixed(2)}
-                                    </span>
-                                </div>
+                                    <div className="item-metrics">
+                                        <div className="metric-group">
+                                            <div className="metric">
+                                                <span className="metric-label">Weight</span>
+                                                <span className="metric-value">{node.weight.toFixed(3)}</span>
+                                            </div>
+                                            <div className="metric">
+                                                <span className="metric-label">Clicks</span>
+                                                <span className="metric-value">{node.clickCount}</span>
+                                            </div>
+                                        </div>
+                                        <div className="metric-group">
+                                            <div className="metric">
+                                                <span className="metric-label">Aging</span>
+                                                <span className="metric-value">{node.agingFactor.toFixed(2)}</span>
+                                            </div>
+                                            <div className="metric">
+                                                <span className="metric-label">Opacity</span>
+                                                <span className="metric-value">{node.degreeOpacity.toFixed(2)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                <div className="item-footer">
-                                    <span className="timestamp">
-                                        {formatTimeDifference(node.clickedAt)}
-                                    </span>
-                                    {node.changeType && (
-                                        <span className="change-type">{node.changeType}</span>
-                                    )}
+                                    <div className="item-footer">
+                                        <span className="timestamp">
+                                            {formatTimeDifference(node.clickedAt)}
+                                        </span>
+                                        {node.changeType && (
+                                            <span className="change-badge">{node.changeType}</span>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))
+                            );
+                        })
                     )}
                 </div>
             )}

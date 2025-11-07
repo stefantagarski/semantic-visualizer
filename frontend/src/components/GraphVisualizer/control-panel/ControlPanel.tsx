@@ -97,7 +97,7 @@ const ControlPanel = ({
                     />
 
                     <CheckboxOption
-                        label="📊 Show Node History"
+                        label="Show Node History"
                         checked={showHistoryPanel}
                         onChange={onToggleHistoryPanel}
                     />

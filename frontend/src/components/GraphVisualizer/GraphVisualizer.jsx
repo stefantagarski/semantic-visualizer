@@ -63,6 +63,26 @@ const GraphVisualizer = ({
         formatType
     });
 
+    useEffect(() => {
+        const clearHistoryOnGraphChange = async () => {
+            try {
+                await OntologyService.clearClickHistory();
+
+                // Reset all graph-related state
+                setSelectedNode(null);
+                setNodeDetails(null);
+                setShowHistoryPanel(false);
+                setHistoryRefreshTrigger(0);
+            } catch(error) {
+                console.error('Error clearing history on graph change:', error);
+            }
+        };
+        // Clear history when graphData changes (new graph loaded)
+        if (graphData && graphData.nodes && graphData.nodes.length > 0) {
+            clearHistoryOnGraphChange();
+        }
+    }, [graphData?.nodes?.length, formatType]); // Track graph changes
+
     // Record node clicks to history and trigger auto-refresh
     useEffect(() => {
         if (selectedNode && graphMetrics.nodeDegrees && graphData) {
