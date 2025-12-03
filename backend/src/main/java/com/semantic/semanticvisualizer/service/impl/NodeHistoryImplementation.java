@@ -1,6 +1,6 @@
 package com.semantic.semanticvisualizer.service.impl;
 
-import com.semantic.semanticvisualizer.model.NodeHistoryDTO;
+import com.semantic.semanticvisualizer.model.dto.NodeHistoryDTO;
 import com.semantic.semanticvisualizer.model.statistics.ClickStatistics;
 import com.semantic.semanticvisualizer.service.NodeHistoryService;
 import org.springframework.stereotype.Service;

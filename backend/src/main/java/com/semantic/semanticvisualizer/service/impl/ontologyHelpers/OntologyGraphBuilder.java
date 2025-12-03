@@ -1,7 +1,7 @@
 package com.semantic.semanticvisualizer.service.impl.ontologyHelpers;
 
-import com.semantic.semanticvisualizer.model.OntologyGraphDTO;
 import com.semantic.semanticvisualizer.model.Triple;
+import com.semantic.semanticvisualizer.model.dto.OntologyGraphDTO;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
