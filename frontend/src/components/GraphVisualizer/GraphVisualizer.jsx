@@ -1,17 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
+import * as d3 from 'd3';
 import ControlPanel from './control-panel/ControlPanel';
 import NodeDetailsPanel from './node-details-panel/NodeDetailsPanel';
 import NodeHistoryPanel from '../NodeHistory/NodeHistoryPanel';
 import OntologyService from '../../services/OntologyService';
 import { useGraphMetrics, useGraphVisualization, useNodeSelection } from './hooks';
 
-const GraphVisualizer = ({
+const GraphVisualizer = React.forwardRef(({
                              graphData,
                              originalOntologyData,
                              formatType,
                              selectedNode: externalSelectedNode,
-                             onNodeSelect
-                         }) => {
+                             onNodeSelect,
+                             hideControls = false,
+                         },
+                                          ref) => {
     const svgRef = useRef();
     const d3Refs = useRef({});
 
@@ -202,25 +205,92 @@ const GraphVisualizer = ({
         }
     };
 
+    React.useImperativeHandle(ref, () => ({
+        focusNode: (nodeId) => {
+            const { simulation, svg, zoom } = d3Refs.current;
+            if (!simulation) return;
+
+            // stop simulation from moving nodes further
+            simulation.alphaTarget(0);
+            simulation.stop();
+
+            // find the node in simulation
+            const target = simulation.nodes().find(n => n.id === nodeId);
+            if (!target) return;
+
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const scale = 1.2; // zoom in more for clarity
+
+            // build transform that centers the node
+            const transform = d3.zoomIdentity
+                .translate(width / 2 - target.x * scale, height / 2 - target.y * scale)
+                .scale(scale);
+
+            // apply smooth zoom transition
+            svg.transition()
+                .duration(900)
+                .ease(d3.easeCubicOut)
+                .call(zoom.transform, transform);
+        },
+        resetView: () => {
+            const { svg, zoom } = d3Refs.current;
+            if (!svg || !zoom) return;
+
+            svg.transition().duration(750).call(
+                zoom.transform,
+                d3.zoomIdentity
+            );
+        },
+
+        clearHighlights: () => {
+            const { node, link } = d3Refs.current;
+            if (!node || !link) return;
+
+            node.classed('highlighted', false);
+            link.classed('highlighted', false);
+        },
+
+        deselectNode: () => {
+            const { node, simulation } = d3Refs.current;
+            if (!node || !simulation) return;
+
+            // Clear CSS class
+            node.classed('selected', false);
+
+            // Clear the selected property from all node data
+            simulation.nodes().forEach(n => {
+                n.selected = false;
+            });
+
+            setSelectedNode(null);
+            setNodeDetails(null);
+        }
+
+    }));
+
+
     return (
         <div className="graph-container" style={{ width: '100%', height: '100%', position: 'relative' }}>
-            <ControlPanel
-                show={showControlPanel}
-                onToggle={() => setShowControlPanel(!showControlPanel)}
-                fadeUnrelated={fadeUnrelated}
-                onFadeUnrelatedChange={setFadeUnrelated}
-                showImportanceIndicator={showImportanceIndicator}
-                onShowImportanceChange={setShowImportanceIndicator}
-                focusDepth={focusDepth}
-                onFocusDepthChange={setFocusDepth}
-                selectedNode={selectedNode}
-                relationshipTypes={graphMetrics.relationshipTypes}
-                selectedRelationships={selectedRelationships}
-                onToggleRelationship={toggleRelationship}
-                onToggleAllRelationships={toggleAllRelationships}
-                showHistoryPanel={showHistoryPanel}
-                onToggleHistoryPanel={() => setShowHistoryPanel(!showHistoryPanel)}
-            />
+            {!hideControls && (
+                <ControlPanel
+                    show={showControlPanel}
+                    onToggle={() => setShowControlPanel(!showControlPanel)}
+                    fadeUnrelated={fadeUnrelated}
+                    onFadeUnrelatedChange={setFadeUnrelated}
+                    showImportanceIndicator={showImportanceIndicator}
+                    onShowImportanceChange={setShowImportanceIndicator}
+                    focusDepth={focusDepth}
+                    onFocusDepthChange={setFocusDepth}
+                    selectedNode={selectedNode}
+                    relationshipTypes={graphMetrics.relationshipTypes}
+                    selectedRelationships={selectedRelationships}
+                    onToggleRelationship={toggleRelationship}
+                    onToggleAllRelationships={toggleAllRelationships}
+                    showHistoryPanel={showHistoryPanel}
+                    onToggleHistoryPanel={() => setShowHistoryPanel(!showHistoryPanel)}
+                />
+            )}
 
             <NodeHistoryPanel
                 isVisible={showHistoryPanel}
@@ -246,7 +316,7 @@ const GraphVisualizer = ({
             )}
         </div>
     );
-};
+});
 
 // Helper function for selection highlighting
 const applySelectionHighlighting = ({

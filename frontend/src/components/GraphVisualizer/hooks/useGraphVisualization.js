@@ -42,10 +42,15 @@ export const useGraphVisualization = ({
         createGrid(container, width, height);
 
         // Prepare data
-        const nodes = graphData.nodes.map(node => ({ id: node.id, label: node.label }));
-        const links = graphData.edges.map(edge => ({
-            source: edge.subject,
-            target: edge.object,
+        const nodes = graphData.nodes.map(node => ({
+            id: node.id,
+            label: node.label
+        }));
+
+        const edges = graphData.edges || graphData.links || [];
+        const links = edges.map(edge => ({
+            source: edge.subject || edge.source,
+            target: edge.object || edge.target,
             label: edge.label || edge.predicate
         }));
 
@@ -121,6 +126,8 @@ export const useGraphVisualization = ({
             .force("link", d3.forceLink(links).id(d => d.id).distance(150))
             .force("charge", d3.forceManyBody().strength(-300))
             .force("center", d3.forceCenter(width / 2, height / 2));
+
+        d3Refs.current.simulation = simulation
 
         // Add drag behavior
         node.call(d3.drag()
