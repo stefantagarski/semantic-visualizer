@@ -1,4 +1,4 @@
-package com.semantic.semanticvisualizer.model;
+package com.semantic.semanticvisualizer.model.dto;
 
 import lombok.*;
 
