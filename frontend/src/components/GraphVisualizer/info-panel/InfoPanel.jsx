@@ -1,7 +1,7 @@
 import React from 'react';
 import './InfoPanel.css';
 
-const InfoPanel = ({ nodeId, onClose }) => {
+const InfoPanel = ({ nodeId, label, onClose }) => {
     if (!nodeId) return null;
 
     return (
@@ -15,6 +15,11 @@ const InfoPanel = ({ nodeId, onClose }) => {
                 >
                     ×
                 </button>
+            </div>
+
+            <div className="data-section">
+                <div className="data-label">LABEL</div>
+                <div className="data-value">{label}</div>
             </div>
 
             <div className="data-section">

@@ -1,8 +1,8 @@
 package com.semantic.semanticvisualizer.web.controller;
 
-import com.semantic.semanticvisualizer.model.NodeDetailsDTO;
-import com.semantic.semanticvisualizer.model.OntologyGraphDTO;
-import com.semantic.semanticvisualizer.model.OntologyStatsDTO;
+import com.semantic.semanticvisualizer.model.dto.NodeDetailsDTO;
+import com.semantic.semanticvisualizer.model.dto.OntologyGraphDTO;
+import com.semantic.semanticvisualizer.model.dto.OntologyStatsDTO;
 import com.semantic.semanticvisualizer.service.NodeHistoryService;
 import com.semantic.semanticvisualizer.service.OntologyService;
 import org.springframework.http.HttpStatus;

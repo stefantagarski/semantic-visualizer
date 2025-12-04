@@ -1,6 +1,6 @@
 package com.semantic.semanticvisualizer.service.impl.ontologyHelpers;
 
-import com.semantic.semanticvisualizer.model.NodeDetailsDTO;
+import com.semantic.semanticvisualizer.model.dto.NodeDetailsDTO;
 import com.semantic.semanticvisualizer.service.impl.ontologyHelpers.utils.OntologyUtils;
 import org.apache.jena.rdf.model.*;
 import org.springframework.stereotype.Service;
@@ -9,9 +9,14 @@ import org.springframework.stereotype.Service;
 public class OntologyNodeDetails {
 
     public NodeDetailsDTO extractDetails(Model model, String nodeId) {
+
+        if (model == null || nodeId == null || nodeId.isEmpty()) {
+            throw new IllegalArgumentException("Model and nodeId must be provided");
+        }
+
         NodeDetailsDTO details = new NodeDetailsDTO();
         details.setId(nodeId);
-        details.setLabel(OntologyUtils.extractLabel(nodeId));
+        details.setLabel(OntologyUtils.extractLabelFromModel(model, nodeId));
 
         Resource nodeResource = model.createResource(nodeId);
 
@@ -19,13 +24,24 @@ public class OntologyNodeDetails {
         while (outgoing.hasNext()) {
             Statement stmt = outgoing.nextStatement();
             RDFNode obj = stmt.getObject();
-            if (obj.isResource()) {
-                details.getOutgoingConnections().add(new NodeDetailsDTO.RelatedNodeDTO(
-                        obj.toString(),
-                        OntologyUtils.extractLabel(obj.toString()),
-                        OntologyUtils.extractLabel(stmt.getPredicate().toString())
-                ));
+
+            String objectId, objectLabel;
+
+            if (obj.isResource()) { // handling resources
+                objectId = obj.toString();
+                objectLabel = OntologyUtils.extractLabelFromModel(model, objectId);
+            } else if (obj.isLiteral()) { // handling literals
+                objectId = obj.asLiteral().getString();
+                objectLabel = objectId; // literals are their own labels
+            } else {
+                continue; // skip unknown types
             }
+
+            details.getOutgoingConnections().add(new NodeDetailsDTO.RelatedNodeDTO(
+                    objectId,
+                    objectLabel,
+                    OntologyUtils.extractLabelFromModel(model, stmt.getPredicate().toString())
+            ));
         }
 
         StmtIterator incoming = model.listStatements(null, null, nodeResource);
@@ -34,8 +50,8 @@ public class OntologyNodeDetails {
             Resource subject = stmt.getSubject();
             details.getIncomingConnections().add(new NodeDetailsDTO.RelatedNodeDTO(
                     subject.toString(),
-                    OntologyUtils.extractLabel(subject.toString()),
-                    OntologyUtils.extractLabel(stmt.getPredicate().toString())
+                    OntologyUtils.extractLabelFromModel(model, subject.toString()),
+                    OntologyUtils.extractLabelFromModel(model, stmt.getPredicate().toString())
             ));
         }
 

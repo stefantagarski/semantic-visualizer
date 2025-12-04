@@ -1,5 +1,6 @@
-package com.semantic.semanticvisualizer.model;
+package com.semantic.semanticvisualizer.model.dto;
 
+import com.semantic.semanticvisualizer.model.Triple;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -1,8 +1,8 @@
 package com.semantic.semanticvisualizer.service.impl;
 
-import com.semantic.semanticvisualizer.model.NodeDetailsDTO;
-import com.semantic.semanticvisualizer.model.OntologyGraphDTO;
-import com.semantic.semanticvisualizer.model.OntologyStatsDTO;
+import com.semantic.semanticvisualizer.model.dto.NodeDetailsDTO;
+import com.semantic.semanticvisualizer.model.dto.OntologyGraphDTO;
+import com.semantic.semanticvisualizer.model.dto.OntologyStatsDTO;
 import com.semantic.semanticvisualizer.service.OntologyService;
 import com.semantic.semanticvisualizer.service.impl.ontologyHelpers.OntologyGraphBuilder;
 import com.semantic.semanticvisualizer.service.impl.ontologyHelpers.OntologyModelLoader;

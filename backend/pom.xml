@@ -144,6 +144,12 @@
             <version>1.27.1</version>
         </dependency>
 
+        <!-- Jackson Databind for JSON processing -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
         <!-- Spring Boot GraphQL Starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
