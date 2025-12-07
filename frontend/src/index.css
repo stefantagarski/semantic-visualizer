@@ -1,68 +1,62 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600;700&display=swap");
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+@import "tailwindcss";
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+@theme {
+    --color-background: hsl(209 40% 96%);
+    --color-foreground: hsl(222 47% 11%);
+    --color-card: hsl(210 40% 98%);
+    --color-card-foreground: hsl(222 47% 11%);
+    --color-popover: hsl(214 31% 91%);
+    --color-popover-foreground: hsl(222 47% 11%);
+    --color-primary: hsl(216 19% 26%);
+    --color-primary-foreground: hsl(210 19% 98%);
+    --color-secondary: hsl(215 19% 34%);
+    --color-secondary-foreground: hsl(210 40% 98%);
+    --color-muted: hsl(215 20% 65%);
+    --color-muted-foreground: hsl(222 47% 11%);
+    --color-accent: hsl(210 40% 98%);
+    --color-accent-foreground: hsl(215 16% 46%);
+    --color-destructive: hsl(0 72% 50%);
+    --color-destructive-foreground: hsl(0 85% 97%);
+    --color-border: hsl(212 26% 83%);
+    --color-input: hsl(212 26% 83%);
+    --color-ring: hsl(216 19% 26%);
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
+/* Additional CSS variables for dark mode and other custom properties */
+@layer base {
+    :root {
+        --radius: 0rem;
+        --font-sans: 'DM Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+        --font-serif: 'Crimson Pro', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+        --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
+    .dark {
+        --color-background: hsl(222 47% 11%);
+        --color-foreground: hsl(210 40% 98%);
+        --color-card: hsl(217 32% 17%);
+        --color-card-foreground: hsl(210 40% 98%);
+        --color-popover: hsl(215 24% 26%);
+        --color-popover-foreground: hsl(210 40% 98%);
+        --color-primary: hsl(212 26% 83%);
+        --color-primary-foreground: hsl(228 84% 4%);
+        --color-secondary: hsl(215 19% 34%);
+        --color-secondary-foreground: hsl(210 40% 98%);
+        --color-muted: hsl(215 16% 46%);
+        --color-muted-foreground: hsl(210 40% 98%);
+        --color-accent: hsl(228 84% 4%);
+        --color-accent-foreground: hsl(215 20% 65%);
+        --color-destructive: hsl(0 84% 60%);
+        --color-destructive-foreground: hsl(0 85% 97%);
+        --color-border: hsl(215 19% 34%);
+        --color-input: hsl(215 19% 34%);
+        --color-ring: hsl(212 26% 83%);
+    }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+    body {
+        @apply bg-background text-foreground;
+    }
 }

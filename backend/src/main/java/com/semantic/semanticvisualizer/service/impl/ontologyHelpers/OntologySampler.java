@@ -1,8 +1,8 @@
 package com.semantic.semanticvisualizer.service.impl.ontologyHelpers;
 
-import com.semantic.semanticvisualizer.model.EdgeDTO;
-import com.semantic.semanticvisualizer.model.NodeDTO;
-import com.semantic.semanticvisualizer.model.OntologyGraphDTO;
+import com.semantic.semanticvisualizer.model.dto.EdgeDTO;
+import com.semantic.semanticvisualizer.model.dto.NodeDTO;
+import com.semantic.semanticvisualizer.model.dto.OntologyGraphDTO;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;

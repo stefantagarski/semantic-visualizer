@@ -41,7 +41,7 @@ const NodeDetailsPanel = ({
                     <InfoCard
                         title="IDENTIFIER"
                         borderColor="#4a6fa5"
-                        backgroundColor="#f7f9fc" children={undefined}                    >
+                        backgroundColor="#f7f9fc"               >
                         {nodeDetails?.label || selectedNode.split('#').pop()}
                     </InfoCard>
 
@@ -49,7 +49,7 @@ const NodeDetailsPanel = ({
                         <InfoCard
                             title="NODE IMPORTANCE"
                             borderColor="#ffc107"
-                            backgroundColor="#fff3cd" children={undefined}                        >
+                            backgroundColor="#fff3cd"                       >
                             {graphMetrics.nodeDegrees[selectedNode] || 0} connections
                             <span style={{ fontSize: '11px', color: '#666', marginLeft: '8px' }}>
                                 ({Math.round(getNodeOpacity(selectedNode) * 100)}% opacity)
@@ -60,7 +60,7 @@ const NodeDetailsPanel = ({
                     <InfoCard
                         title="FULL URI"
                         borderColor="#4a6fa5"
-                        backgroundColor="#f7f9fc" children={undefined}                    >
+                        backgroundColor="#f7f9fc"                 >
                         <div style={{ fontSize: '14px', wordBreak: 'break-all' }}>
                             {selectedNode}
                         </div>

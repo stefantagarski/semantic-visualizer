@@ -73,26 +73,24 @@ const FileUploadForm = ({
             />
 
             {!selectedFile ? (
-                <div
-                    className={`upload-area flex flex-col items-center justify-center p-10 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                        dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-blue-400"
-                    }`}
-                    onClick={openFileSelector}
-                    onDragEnter={handleDrag}
-                    onDragLeave={handleDrag}
-                    onDragOver={handleDrag}
-                    onDrop={handleDrop}
-                >
-                    <Upload size={48} className="text-blue-500 mb-4" />
-                    <p className="text-lg font-medium text-gray-700">
-                        Drag and drop your file here
-                    </p>
-                    <p className="text-sm text-gray-500 mt-2">
-                        or click to browse files
-                    </p>
-                    <p className="text-xs text-gray-400 mt-4">
-                        Supported formats: TURTLE, RDF/XML, JSON-LD, N-TRIPLE, TRIG
-                    </p>
+                <div className="flex items-center justify-center w-full h-full">
+                    <div
+                        className={`upload-area flex flex-col items-center justify-center p-10 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                            dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-blue-400"
+                        }`}
+                        onClick={openFileSelector}
+                        onDragEnter={handleDrag}
+                        onDragLeave={handleDrag}
+                        onDragOver={handleDrag}
+                        onDrop={handleDrop}
+                    >
+                        <Upload size={48} className="text-blue-500 mb-4" />
+                        <p className="text-lg font-medium text-gray-700">Drag and drop your file here</p>
+                        <p className="text-sm text-gray-500 mt-2">or click to browse files</p>
+                        <p className="text-xs text-gray-400 mt-4">
+                            Supported formats: TURTLE, RDF/XML, JSON-LD, N-TRIPLE, TRIG
+                        </p>
+                    </div>
                 </div>
             ) : (
                 <div className="selected-file bg-gray-50 rounded-lg p-4 border border-gray-200">

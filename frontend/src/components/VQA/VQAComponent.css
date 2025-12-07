@@ -1,0 +1,83 @@
+.vqa-main-container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    background: linear-gradient(to bottom right, #f8fafc, #f1f5f9);
+}
+
+.vqa-upload-container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(to bottom right, #f8fafc, #f1f5f9);
+    position: relative;
+}
+
+.vqa-layout {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+.vqa-graph-section {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.vqa-instructions {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    max-width: 320px;
+}
+
+.vqa-instructions h3 {
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.vqa-instructions ol {
+    color: #475569;
+    font-size: 13px;
+    line-height: 1.6;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.vqa-instructions li {
+    margin: 4px 0;
+}
+
+.back-button,
+.vqa-exit-button {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: rgba(79, 70, 229, 0.95);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 1000;
+    font-size: 14px;
+}
+
+.back-button:hover,
+.vqa-exit-button:hover {
+    background: rgba(79, 70, 229, 1);
+    transform: translateX(-2px);
+}

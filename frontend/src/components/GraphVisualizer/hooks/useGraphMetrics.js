@@ -1,7 +1,5 @@
 import { useMemo } from 'react';
 
-{/* Custom hook to compute graph metrics such as relationship types and node degrees (statistics) */ }
-
 export const useGraphMetrics = (graphData) => {
     return useMemo(() => {
         if (!graphData) {
@@ -20,14 +18,25 @@ export const useGraphMetrics = (graphData) => {
             degrees[node.id] = 0;
         });
 
+        // Use links OR edges (VQA uses 'links', main graph uses 'edges')
+        const edges = graphData.edges || graphData.links || [];
+
         // Count degrees and collect relationship types
-        graphData.edges.forEach(edge => {
+        edges.forEach(edge => {
             const label = edge.label || edge.predicate;
             types.add(label);
 
+            // Handle different edge formats
+            const source = edge.subject || edge.source;
+            const target = edge.object || edge.target;
+
             // Count degrees (number of connections per node)
-            degrees[edge.subject] = (degrees[edge.subject] || 0) + 1;
-            degrees[edge.object] = (degrees[edge.object] || 0) + 1;
+            if (source) {
+                degrees[source] = (degrees[source] || 0) + 1;
+            }
+            if (target) {
+                degrees[target] = (degrees[target] || 0) + 1;
+            }
         });
 
         // Calculate max degree for normalization

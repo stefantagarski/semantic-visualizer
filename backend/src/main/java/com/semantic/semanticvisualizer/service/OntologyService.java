@@ -1,8 +1,8 @@
 package com.semantic.semanticvisualizer.service;
 
-import com.semantic.semanticvisualizer.model.NodeDetailsDTO;
-import com.semantic.semanticvisualizer.model.OntologyGraphDTO;
-import com.semantic.semanticvisualizer.model.OntologyStatsDTO;
+import com.semantic.semanticvisualizer.model.dto.NodeDetailsDTO;
+import com.semantic.semanticvisualizer.model.dto.OntologyGraphDTO;
+import com.semantic.semanticvisualizer.model.dto.OntologyStatsDTO;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
