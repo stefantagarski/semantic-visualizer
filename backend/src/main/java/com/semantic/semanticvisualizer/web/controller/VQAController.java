@@ -95,19 +95,4 @@ public class VQAController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
-
-    @PostMapping("/sessions/{sessionId}/triples")
-    public ResponseEntity<?> extractTriples(
-            @PathVariable String sessionId,
-            @RequestBody List<String> nodeUris) {
-        try {
-            List<TripleVQA> triples = vqaService.extractTriplesFromPath(sessionId, nodeUris);
-            return ResponseEntity.ok(triples);
-        } catch (IllegalStateException | IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("An unexpected error occurred: " + e.getMessage());
-        }
-    }
 }

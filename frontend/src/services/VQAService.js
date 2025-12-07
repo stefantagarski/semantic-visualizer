@@ -45,31 +45,6 @@ class VQAService {
     }
 
     /**
-     * Upload VQA dataset from JSON data
-     * @param jsonString
-     * @returns {Promise<void>}
-     */
-    static async uploadDatasetJson(jsonString) {
-        try {
-            const response = await axios.post(
-                `${API_BASE_URL}/dataset/json`,
-                jsonString,
-                {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-            return response.data;
-        } catch (error) {
-            console.error('Error uploading VQA dataset file:', error);
-            console.error('Error response:', error.response);
-            const errorMessage = error.response?.data || error.message || 'Failed to upload VQA dataset';
-            throw new Error(errorMessage);
-        }
-    }
-
-    /**
      * Start a new VQA session
      * @param {string} questionId - ID of the question to answer
      * @returns {Promise} - Promise with session information
@@ -103,28 +78,6 @@ class VQAService {
             console.error('Error validating path:', error);
             console.error('Error response:', error.response);
             const errorMessage = error.response?.data || error.message || 'Failed to validate path';
-            throw new Error(errorMessage);
-        }
-    }
-
-
-    /**
-     * Extract triples from selected nodes
-     * @param {string} sessionId - ID of the session
-     * @param {Array<string>} nodeUris - Array of node URIs
-     * @returns {Promise} - Promise with list of triples
-     */
-    static async extractTriples(sessionId, nodeUris) {
-        try {
-            const response = await axios.post(
-                `${API_BASE_URL}/sessions/${sessionId}/triples`,
-                nodeUris
-            );
-            return response.data;
-        } catch (error) {
-            console.error('Error extracting triples:', error);
-            console.error('Error response:', error.response);
-            const errorMessage = error.response?.data || error.message || 'Failed to extract triples';
             throw new Error(errorMessage);
         }
     }

@@ -19,8 +19,6 @@ const VQAComponent = () => {
     const [validationResult, setValidationResult] = useState(null);
     const [score, setScore] = useState(0);
     const [_loading, setLoading] = useState(false);
-    const [_searchQuery, setSearchQuery] = useState('');
-    const [_searchResults, setSearchResults] = useState([]);
     const [_selectedNodeInfo, setSelectedNodeInfo] = useState(null);
     const graphRef = useRef(null);
 
@@ -95,7 +93,6 @@ const VQAComponent = () => {
         if (node && event) {
             // Store node info and position for popup
             setSelectedNodeInfo(node);
-            // setPopupPosition({ x: event.clientX, y: event.clientY });
         }
 
         handleNodeClick(nodeId); // Add to VQA path
@@ -122,10 +119,6 @@ const VQAComponent = () => {
             graphRef.current.clearHighlights?.(); // Clear any highlighted nodes/edges
             graphRef.current.deselectNode?.(); // Clear selected node
         }
-
-        // Reset search bar state
-        setSearchQuery('');
-        setSearchResults([]);
     };
 
 

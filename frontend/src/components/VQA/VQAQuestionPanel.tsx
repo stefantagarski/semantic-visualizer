@@ -46,7 +46,6 @@ const VQAQuestionPanel = ({
                 <Card className="mt-4 bg-card border-border">
                     <div className="p-3 flex justify-between text-sm">
                         <span>Question {questionIndex + 1}/{totalQuestions}</span>
-                        <span className="font-semibold">Score: {score}</span> {/* TODO  add the score for every answered question based on the difficulty level*/}
                     </div>
                 </Card>
             </div>

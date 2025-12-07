@@ -65,15 +65,6 @@ public interface VQAService {
     PathValidationResult validateUserPath(String sessionId, UserAnswerPath userPath);
 
     /**
-     * Extract triples from a given path of node URIs
-     *
-     * @param sessionId the VQA session ID
-     * @param nodeURIs  List of node URIs representing the path
-     * @return List of extracted triples
-     */
-    List<TripleVQA> extractTriplesFromPath(String sessionId, List<String> nodeURIs);
-
-    /**
      * Generate a graph representation for a specific dataset
      *
      * @param datasetId dataset ID

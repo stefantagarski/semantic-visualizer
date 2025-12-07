@@ -28,7 +28,6 @@ public class VQAServiceImplementation implements VQAService {
     private final ObjectMapper objectMapper; // for JSON processing (serialization/deserialization)
     private final Map<String, VQADataset> vqaDatasets = new ConcurrentHashMap<>();
     private final Map<String, VQASessionDTO> vqaSessions = new ConcurrentHashMap<>();
-    private final Map<String, Model> sessionOntologyModels = new ConcurrentHashMap<>(); // to store ontology models per session (caching)
 
     public VQAServiceImplementation(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
@@ -144,7 +143,6 @@ public class VQAServiceImplementation implements VQAService {
         List<String> incorrectNodes = new ArrayList<>();
 
         for (String node : userNodeURIs) {
-//            String norm = node.contains("/") ? node.substring(node.lastIndexOf("/") + 1) : node;
             if (normalizedExpected.contains(node)) correctNodes.add(node);
             else incorrectNodes.add(node);
         }
@@ -173,44 +171,6 @@ public class VQAServiceImplementation implements VQAService {
                 .userPath(userNodeURIs)
                 .feedback(feedback)
                 .build();
-    }
-
-
-    @Override
-    public List<TripleVQA> extractTriplesFromPath(String sessionId, List<String> nodeURIs) {
-
-        Model model = sessionOntologyModels.get(sessionId); // use the cached model
-
-        if (model == null) {
-            throw new IllegalStateException("Ontology not loaded for session: " + sessionId);
-        }
-
-        List<TripleVQA> triples = new ArrayList<>();
-        for (String nodeURI : nodeURIs) {
-
-            Resource r = model.getResource(nodeURI);
-
-            // outgoing
-            model.listStatements(r, null, (RDFNode) null).forEachRemaining(stmt -> {
-                String subj = stmt.getSubject().getURI();
-                String pred = stmt.getPredicate().getURI();
-                String obj = stmt.getObject().isResource()
-                        ? stmt.getObject().asResource().getURI()
-                        : stmt.getObject().toString();
-
-                triples.add(TripleVQA.fromRdf(subj, pred, obj));
-            });
-
-            // incoming
-            model.listStatements(null, null, r).forEachRemaining(stmt -> {
-                String subj = stmt.getSubject().getURI();
-                String pred = stmt.getPredicate().getURI();
-                String obj = nodeURI;
-
-                triples.add(TripleVQA.fromRdf(subj, pred, obj));
-            });
-        }
-        return triples;
     }
 
     @Override

@@ -104,8 +104,7 @@ const VQADatasetUpload = ({ onDatasetUploaded }: VQADatasetUploadProps) => {
                         <h3 className="text-sm font-semibold text-foreground mb-2">Expected Format</h3>
                         <ul className="text-xs text-muted-foreground space-y-1">
                             <li>• JSON file with questions array</li>
-                            <li>• Each question should have: questionText, expectedPath</li>
-                            <li>• Optional: difficulty level (easy/medium/hard)</li>
+                            <li>• Each question should have: userAnswerPath, expectedPath</li>
                         </ul>
                     </Card>
                 </div>
